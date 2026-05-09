@@ -256,3 +256,103 @@ button:disabled { background: #444; cursor: default; }
   cursor: pointer;
 }
 .inv-btn:hover { background: #1a4a7a; }
+
+/* ── 모바일 반응형 ── */
+@media (max-width: 768px) {
+  body {
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  #game-screen.active {
+    display: block;
+    padding: 0.5rem;
+  }
+
+  #game-layout {
+    flex-direction: column;
+    gap: 0.8rem;
+    max-width: 100%;
+  }
+
+  #board-area {
+    width: 100%;
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  #side-panel {
+    width: 100%;
+  }
+
+  #log-box {
+    height: 80px;
+  }
+
+  #hand-cards {
+    gap: 5px;
+  }
+
+  .card {
+    width: 48px;
+    height: 68px;
+    font-size: 0.85rem;
+  }
+
+  .card .card-rank {
+    font-size: 1rem;
+  }
+
+  .card .card-suit {
+    font-size: 0.75rem;
+  }
+
+  .card .card-move {
+    font-size: 0.65rem;
+  }
+
+  .lobby-box, .waiting-box, .result-box {
+    width: 95%;
+    padding: 1.5rem 1rem;
+  }
+
+  .player-setup {
+    grid-template-columns: 1fr;
+  }
+
+  #action-buttons {
+    flex-direction: column;
+  }
+
+  #action-buttons button {
+    width: 100%;
+  }
+
+  #shop-modal > div {
+    width: 95% !important;
+    padding: 1.2rem !important;
+  }
+
+  .shop-item-btn {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .shop-desc {
+    margin-left: 0 !important;
+    width: 100%;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .card {
+    width: 42px;
+    height: 60px;
+  }
+
+  .card .card-rank {
+    font-size: 0.9rem;
+  }
+}

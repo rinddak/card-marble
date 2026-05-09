@@ -198,9 +198,17 @@ function drawBackground(ctx) {
 }
 
 function drawBoard(canvas, boardData, playersData) {
-  canvas.width  = BOARD_PX;
+  // 모바일이면 화면 너비에 맞게 캔버스 축소
+  const maxWidth = Math.min(window.innerWidth - 32, BOARD_PX);
+  const scale = maxWidth / BOARD_PX;
+
+  canvas.width = BOARD_PX;
   canvas.height = BOARD_PX;
+  canvas.style.width = maxWidth + "px";
+  canvas.style.height = maxWidth + "px";
+
   const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, BOARD_PX, BOARD_PX);
 
   drawBackground(ctx);
   boardData.forEach(cell => drawCell(ctx, cell));
