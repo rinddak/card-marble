@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>카드마블 - 연금술사의 여정</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 로비 -->
+  <div id="lobby-screen" class="screen active">
+    <div class="lobby-box">
+      <h1>⚗️ 카드마블</h1>
+      <p class="subtitle">연금술사의 여정</p>
+      <input id="player-name" type="text" placeholder="닉네임 입력" maxlength="10">
+      <div class="lobby-buttons">
+        <button id="btn-create">방 만들기</button>
+        <button id="btn-join">방 입장</button>
+      </div>
+      <div id="join-row" style="display:none">
+        <input id="room-id-input" type="text" placeholder="방 코드 입력 (예: A3F2K)" maxlength="5">
+        <button id="btn-join-confirm">입장</button>
+      </div>
+      <p id="lobby-error" class="error-msg"></p>
+    </div>
+  </div>
+
+  <!-- 대기실 -->
+  <div id="waiting-screen" class="screen">
+    <div class="waiting-box">
+      <h2>대기실</h2>
+      <div class="room-code-display">방 코드: <span id="room-code-text">-----</span></div>
+      <ul id="player-list"></ul>
+      <button id="btn-start" style="display:none">게임 시작</button>
+      <p id="waiting-msg" class="muted">다른 플레이어를 기다리는 중...</p>
+    </div>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="game-screen" class="screen">
+    <div id="game-layout">
+      <div id="board-area">
+        <canvas id="board-canvas" width="660" height="660"></canvas>
+      </div>
+      <div id="side-panel">
+        <div id="turn-banner"></div>
+        <div id="player-info-list"></div>
+        <div id="log-box"></div>
+        <div id="hand-area">
+          <div id="inventory" style="display:flex; gap:6px; margin-bottom:8px; min-height:32px;"></div>
+          <div id="hand-label">내 손패</div>
+          <div id="hand-cards"></div>
+          <div id="action-buttons">
+            <button id="btn-draw">카드 드로우</button>
+          </div>
+          <div id="potion-banner" style="display:none">
+            <p>🧪 물약 찬스! 카드를 1장 더 버릴 수 있습니다.</p>
+            <button id="btn-potion-pass">패스</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 종료 -->
+  <div id="result-screen" class="screen">
+    <div class="result-box">
+      <h2 id="result-title">게임 종료</h2>
+      <p id="result-winner"></p>
+      <button id="btn-restart">다시 하기</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/hand.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+<!-- 아이템 상점 모달 -->
+<div id="shop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  align-items:center; justify-content:center; z-index:100;">
+  <div style="background:#16213e; border:2px solid #fdcb6e; border-radius:16px;
+    padding:2rem; width:340px; text-align:center;">
+    <h3 style="color:#fdcb6e; margin-bottom:1rem;">🏪 아이템 상점</h3>
+    <p style="color:#aaa; font-size:.85rem; margin-bottom:1.2rem;">아이템 1개를 선택하세요</p>
+    <div id="shop-item-list" style="display:flex; flex-direction:column; gap:.7rem;"></div>
+    <button onclick="socket.emit('skip-shop'); document.getElementById('shop-modal').style.display='none';"
+      style="margin-top:1.2rem; background:#444; width:100%;">패스</button>
+  </div>
+</div>
+</body>
+</html>

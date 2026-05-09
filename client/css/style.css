@@ -1,0 +1,258 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px; /* 추가 */
+}
+
+.screen { display: none; width: 100%; }
+.screen.active { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+/* 로비 */
+.lobby-box, .waiting-box, .result-box {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 380px;
+  text-align: center;
+}
+h1 { font-size: 2.2rem; margin-bottom: .3rem; }
+h2 { font-size: 1.5rem; margin-bottom: 1.2rem; }
+.subtitle { color: #a29bfe; margin-bottom: 1.5rem; font-size: 1rem; }
+
+input[type=text] {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #0f3460;
+  background: #0f3460;
+  color: #eee;
+  font-size: 1rem;
+  margin-bottom: .8rem;
+  outline: none;
+}
+input[type=text]:focus { border-color: #a29bfe; }
+
+button {
+  padding: 11px 22px;
+  border-radius: 8px;
+  border: none;
+  background: #6c5ce7;
+  color: #fff;
+  font-size: 1rem;  /* 기존 .95rem */
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+button:hover { background: #a29bfe; }
+button:active { transform: scale(.97); }
+button:disabled { background: #444; cursor: default; }
+
+.lobby-buttons { display: flex; gap: .7rem; justify-content: center; margin-bottom: .8rem; }
+#join-row { display: flex; gap: .5rem; }
+#join-row input { margin-bottom: 0; }
+
+.error-msg { color: #e17055; font-size: .85rem; margin-top: .5rem; min-height: 1.2rem; }
+.muted { color: #888; font-size: .85rem; margin-top: .8rem; }
+
+.room-code-display {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 1.2rem;
+  font-size: 1.1rem;
+  letter-spacing: .1em;
+}
+#player-list { list-style: none; margin-bottom: 1rem; }
+#player-list li {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.player-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+/* 게임 화면 */
+#game-screen.active {
+  display: block;
+  padding: 1rem;
+}
+#game-layout {
+  display: flex;
+  gap: 1.2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+#board-area canvas {
+  border-radius: 12px;
+  border: 2px solid #0f3460;
+  display: block;
+}
+#side-panel {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+}
+#turn-banner {
+  background: #6c5ce7;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 1.1rem; /* 기존 .95rem */
+  font-weight: 700;
+  text-align: center;
+  min-height: 46px;
+}
+#player-info-list {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.player-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem; /* 기존 .85rem */
+}
+.player-info-row.active-player { font-weight: 700; color: #a29bfe; }
+.hand-count {
+  margin-left: auto;
+  background: #0f3460;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.9rem; /* 기존 .8rem */
+}
+#log-box {
+  background: #0a0a1a;
+  border: 1px solid #0f3460;
+  border-radius: 10px;
+  padding: 10px 12px;
+  height: 140px;
+  overflow-y: auto;
+  font-size: 0.92rem; /* 기존 .8rem */
+  color: #ccc;        /* 기존 #aaa, 더 밝게 */
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.log-entry { line-height: 1.4; }
+.log-entry.highlight { color: #a29bfe; }
+
+#hand-area {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 10px;
+  padding: 10px;
+  flex: 1;
+}
+#hand-label {
+  font-size: 0.95rem; /* 기존 .8rem */
+  color: #aaa;
+  margin-bottom: 8px;
+}
+#hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  min-height: 60px;
+}
+
+/* 카드 UI */
+.card {
+  width: 56px;   /* 기존 48px */
+  height: 78px;  /* 기존 68px */
+  border-radius: 7px;
+  background: #fff;
+  color: #222;
+  border: 1.5px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;   /* 기존 .85rem */
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  position: relative;
+  user-select: none;
+}
+.card:hover { transform: translateY(-6px); box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.card.selected { transform: translateY(-10px); box-shadow: 0 0 0 2px #6c5ce7; }
+.card .card-rank {
+  font-size: 1.15rem; /* 기존 1rem */
+}
+.card .card-suit {
+  font-size: 0.85rem; /* 기존 .7rem */
+}
+.card .card-move {
+  position: absolute;
+  bottom: 3px;
+  right: 5px;
+  font-size: 0.75rem; /* 기존 .65rem */
+  color: #6c5ce7;
+}
+.card.red { color: #e74c3c; }
+.card.disabled { opacity: .4; cursor: default; transform: none; }
+
+#action-buttons { display: flex; gap: .5rem; }
+#action-buttons button { flex: 1; font-size: .85rem; padding: 8px; }
+#btn-play-card { background: #00b894; }
+#btn-play-card:hover { background: #55efc4; color: #222; }
+
+#potion-banner {
+  background: #2d3436;
+  border: 1px solid #a29bfe;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 8px;
+  font-size: .82rem;
+  text-align: center;
+}
+#potion-banner p { margin-bottom: 6px; color: #a29bfe; }
+
+.result-box { text-align: center; }
+#result-title { font-size: 1.8rem; margin-bottom: .5rem; }
+#result-winner { font-size: 1.1rem; color: #a29bfe; margin-bottom: 1.5rem; }
+
+.shop-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px; /* 기존 12px 14px */
+  background: #0f3460;
+  border: 1px solid #fdcb6e;
+  border-radius: 10px;
+  color: #eee;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s;
+}
+
+.shop-icon { font-size: 1.6rem; /* 기존 1.4rem */ }
+.shop-name { font-weight: 700; font-size: 1.05rem; /* 기존 .95rem */ }
+.shop-desc { font-size: 0.88rem; color: #bbb; margin-left: auto; /* 기존 #aaa */ }
+
+.inv-btn {
+  font-size: 1.3rem;
+  background: #0f3460;
+  border: 1px solid #6c5ce7;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.inv-btn:hover { background: #1a4a7a; }
