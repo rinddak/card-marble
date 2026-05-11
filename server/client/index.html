@@ -78,15 +78,16 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 <!-- 아이템 상점 모달 -->
-<div id="shop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+<div id="shop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
   align-items:center; justify-content:center; z-index:100;">
-  <div style="background:#16213e; border:2px solid #fdcb6e; border-radius:16px;
-    padding:2rem; width:340px; text-align:center;">
-    <h3 style="color:#fdcb6e; margin-bottom:1rem;">🏪 아이템 상점</h3>
-    <p style="color:#aaa; font-size:.85rem; margin-bottom:1.2rem;">아이템 1개를 선택하세요</p>
+  <div style="background:linear-gradient(145deg,#2C1A08,#1E1005); border:2px solid #C8A96E;
+    border-radius:16px; padding:2rem; width:360px; text-align:center;
+    box-shadow:0 0 40px rgba(200,169,110,0.3);">
+    <h3 style="color:#C8A96E; margin-bottom:.5rem; font-family:'Cinzel',serif;">🏪 아이템 상점</h3>
+    <p style="color:#8B6340; font-size:.9rem; margin-bottom:1.2rem; font-style:italic;">아이템 1개를 선택하세요</p>
     <div id="shop-item-list" style="display:flex; flex-direction:column; gap:.7rem;"></div>
     <button onclick="socket.emit('skip-shop'); document.getElementById('shop-modal').style.display='none';"
-      style="margin-top:1.2rem; background:#444; width:100%;">패스</button>
+      style="margin-top:1.2rem; width:100%;">패스</button>
   </div>
 </div>
 </body>
