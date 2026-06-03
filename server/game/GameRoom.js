@@ -2,12 +2,7 @@ const { createShuffledDeck } = require("./Deck");
 const { createBoard, applyCellEffect } = require("./Board");
 
 const HAND_SIZE = 7;
-
-const ITEMS = {
-  double:  { id:"double",  name:"두배 물약",    icon:"🔴", desc:"다음 이동 칸수 2배" },
-  swap:    { id:"swap",    name:"위치 이동 물약", icon:"🟣", desc:"랜덤 플레이어와 위치 교환" },
-  protect: { id:"protect", name:"보호 물약",     icon:"🔵", desc:"다음 나쁜 칸 효과 1회 무효" },
-};
+const TOTAL_CELLS = 20;
 
 class GameRoom {
   constructor(id) {
@@ -18,7 +13,7 @@ class GameRoom {
     this.started = false;
     this.currentTurn = 0;
     this.potionChancePlayer = null;
-    this.shopPlayer = null; // 상점 대기 중인 플레이어
+    this.alchBoostPlayer = null; // 연금술 촉진 카드 사용 대기
   }
 
   addPlayer(id, name) {
@@ -27,10 +22,10 @@ class GameRoom {
       id, name,
       pos: 0,
       hand: [],
-      items: [],          // 보유 아이템
+      chanceCards: [],
       reverseNext: false,
-      doubleNext: false,  // 두배 물약 효과
-      protected: false,   // 보호 물약 효과
+      doubleNext: false,
+      protected: false,
       color: colors[this.players.length]
     };
     this.players.push(player);
@@ -47,7 +42,7 @@ class GameRoom {
     this.players.forEach(p => {
       p.pos = 0;
       p.hand = this.deck.splice(0, HAND_SIZE);
-      p.items = [];
+      p.chanceCards = [];
       p.reverseNext = false;
       p.doubleNext = false;
       p.protected = false;
@@ -63,7 +58,7 @@ class GameRoom {
   _nextTurn() {
     this.currentTurn = (this.currentTurn + 1) % this.players.length;
     this.potionChancePlayer = null;
-    this.shopPlayer = null;
+    this.alchBoostPlayer = null;
   }
 
   playCard(playerId, cardIndex) {
@@ -74,126 +69,85 @@ class GameRoom {
       return { success:false, message:"잘못된 카드 인덱스입니다." };
 
     const card = player.hand.splice(cardIndex, 1)[0];
-
-    // 두배 물약 효과 적용
     let move = card.move;
-    if (player.doubleNext) {
-      move *= 2;
-      player.doubleNext = false;
-    }
+    if (player.doubleNext) { move *= 2; player.doubleNext = false; }
+    if (player.reverseNext) { move = -move; player.reverseNext = false; }
 
-    // 역류 적용
-    if (player.reverseNext) {
-      move = -move;
-      player.reverseNext = false;
-    }
-
-    player.pos = ((player.pos + move) % 36 + 36) % 36;
+    player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
     const cell = this.board[player.pos];
+    const events = applyCellEffect(cell, player, this.players, this.deck);
 
-    // 보호 물약: 나쁜 칸 효과 무효
-    const BAD_CELLS = ["trap","thunder","alchemy","reverse"];
-    let events = [];
-    if (player.protected && BAD_CELLS.includes(cell.type)) {
-      player.protected = false;
-      events.push({ type:"protect_used", playerId:player.id,
-        message:`🔵 보호 물약 발동! ${cell.label} 효과가 무효화됩니다.` });
-    } else {
-      events = applyCellEffect(cell, player, this.players, this.deck);
-    }
-
-    // 상점 칸 처리
-    let shopChance = false;
-    if (cell.type === "shop") {
-      this.shopPlayer = player.id;
-      shopChance = true;
-    }
-
-    // 물약 찬스 (potion, crystal 칸)
+    // 수정구슬/crystal 칸 → 카드 버리기 선택
     let potionChance = false;
     const potionEvent = events.find(e => e.type === "potion");
-    if (potionEvent && cell.type !== "shop") {
+    if (potionEvent) {
       this.potionChancePlayer = player.id;
       potionChance = true;
     }
 
     // 승리 체크
-    if (player.hand.length === 0) {
-      return { success:true, events, potionChance:false, shopChance:false, winner:player };
-    }
+    if (player.hand.length === 0)
+      return { success:true, events, potionChance:false, winner:player };
 
-    if (!potionChance && !shopChance) this._nextTurn();
-
-    return { success:true, events, potionChance, shopChance, winner:null };
+    if (!potionChance) this._nextTurn();
+    return { success:true, events, potionChance, winner:null };
   }
 
-  // 아이템 상점 구매
-  buyItem(playerId, itemId) {
-    if (this.shopPlayer !== playerId)
-      return { success:false, message:"상점 이용 권한이 없습니다." };
+  // 찬스 카드 사용
+  useChanceCard(playerId, cardId) {
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success:false, message:"플레이어 없음" };
-    if (!ITEMS[itemId]) return { success:false, message:"없는 아이템입니다." };
+    const idx = player.chanceCards.findIndex(c => c.id === cardId);
+    if (idx < 0) return { success:false, message:"보유하지 않은 찬스 카드" };
 
-    // swap 아이템은 즉시 발동
-    if (itemId === "swap") {
-      const others = this.players.filter(p => p.id !== playerId);
-      if (others.length > 0) {
+    player.chanceCards.splice(idx, 1);
+
+    switch (cardId) {
+      case "thunder_boost": {
+        player.pos = (player.pos + 3) % TOTAL_CELLS;
+        const cell = this.board[player.pos];
+        const events = applyCellEffect(cell, player, this.players, this.deck);
+        if (player.hand.length === 0)
+          return { success:true, message:"⚡ 번개 가속! 3칸 이동합니다.", winner:player, events };
+        return { success:true, message:"⚡ 번개 가속! 3칸 추가 이동합니다.", events };
+      }
+      case "magic_shield":
+        player.protected = true;
+        return { success:true, message:"🛡️ 마법 방패! 다음 함정 효과를 막습니다.", events:[] };
+      case "time_reverse": {
+        const others = this.players.filter(p => p.id !== playerId);
+        if (others.length === 0) return { success:false, message:"대상 없음" };
         const target = others[Math.floor(Math.random() * others.length)];
-        const tempPos = player.pos;
-        player.pos = target.pos;
-        target.pos = tempPos;
-        this._nextTurn();
-        return { success:true, immediate:true,
-          message:`🟣 위치 이동 물약! ${target.name}과(와) 위치가 바뀌었습니다.` };
+        target.pos = ((target.pos - 3) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
+        return { success:true, message:`🔄 시간 역행! ${target.name}을(를) 3칸 뒤로 보냈습니다.`, events:[] };
+      }
+      case "alch_boost": {
+        this.alchBoostPlayer = playerId;
+        return { success:true, message:"✨ 연금술 촉진! 버릴 카드를 선택하세요.", alchBoost:true, events:[] };
       }
     }
-
-    // double, protect 는 인벤토리에 보관
-    player.items.push(ITEMS[itemId]);
-    this._nextTurn();
-    return { success:true, immediate:false,
-      message:`${ITEMS[itemId].icon} ${ITEMS[itemId].name}을(를) 획득했습니다!` };
+    return { success:false, message:"알 수 없는 카드" };
   }
 
-  // 상점 패스
-  skipShop(playerId) {
-    if (this.shopPlayer === playerId) this._nextTurn();
-  }
-
-  // 아이템 사용 (인벤토리에서)
-  useItem(playerId, itemId) {
+  // 연금술 촉진 카드 버리기
+  alchBoostDiscard(playerId, cardIndex) {
+    if (this.alchBoostPlayer !== playerId)
+      return { success:false, message:"연금술 촉진 대기 중이 아닙니다." };
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success:false, message:"플레이어 없음" };
-    const idx = player.items.findIndex(i => i.id === itemId);
-    if (idx < 0) return { success:false, message:"보유하지 않은 아이템" };
+    if (cardIndex < 0 || cardIndex >= player.hand.length)
+      return { success:false, message:"잘못된 카드 인덱스" };
 
-    player.items.splice(idx, 1);
+    player.hand.splice(cardIndex, 1);
+    this.alchBoostPlayer = null;
 
-    if (itemId === "double") {
-      player.doubleNext = true;
-      return { success:true, message:"🔴 두배 물약 사용! 다음 이동이 2배가 됩니다." };
-    }
-    if (itemId === "protect") {
-      player.protected = true;
-      return { success:true, message:"🔵 보호 물약 사용! 다음 나쁜 칸 효과를 막습니다." };
-    }
-    if (itemId === "swap") {
-      const others = this.players.filter(p => p.id !== playerId && p.hand.length > 0);
-      if (others.length > 0) {
-        const target = others[Math.floor(Math.random() * others.length)];
-        const tempPos = player.pos;
-        player.pos = target.pos;
-        target.pos = tempPos;
-        return { success:true, message:`🟣 위치 이동 물약! ${target.name}과(와) 위치가 바뀌었습니다.` };
-      }
-    }
-    return { success:false, message:"효과 발동 실패" };
+    if (player.hand.length === 0) return { success:true, winner:player };
+    return { success:true, winner:null };
   }
 
   potionDiscard(playerId, cardIndex) {
     if (this.potionChancePlayer !== playerId)
-      return { success:false, message:"물약 찬스가 없습니다." };
+      return { success:false, message:"수정구슬 찬스가 없습니다." };
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success:false, message:"플레이어 없음" };
     if (cardIndex < 0 || cardIndex >= player.hand.length)
@@ -201,7 +155,6 @@ class GameRoom {
 
     player.hand.splice(cardIndex, 1);
     this._nextTurn();
-
     if (player.hand.length === 0) return { success:true, winner:player };
     return { success:true, winner:null };
   }
@@ -236,13 +189,12 @@ class GameRoom {
         id:p.id, name:p.name, pos:p.pos, color:p.color,
         handCount:p.hand.length, reverseNext:p.reverseNext,
         doubleNext:p.doubleNext, protected:p.protected,
-        items:p.items
+        chanceCards:p.chanceCards
       })),
       currentTurn: this.players[this.currentTurn]?.id || null,
       deckCount: this.deck.length,
       potionChancePlayer: this.potionChancePlayer,
-      shopPlayer: this.shopPlayer,
-      shopItems: Object.values(ITEMS),
+      alchBoostPlayer: this.alchBoostPlayer,
     };
   }
 }
