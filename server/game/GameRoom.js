@@ -1,7 +1,7 @@
 const { createShuffledDeck } = require("./Deck");
 const { createBoard, applyCellEffect } = require("./Board");
 
-const HAND_SIZE = 7;
+const HAND_SIZE = 10;
 const TOTAL_CELLS = 20;
 
 class GameRoom {
