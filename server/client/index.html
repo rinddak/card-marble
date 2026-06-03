@@ -2,40 +2,25 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>카드마블 - 연금술사의 여정</title>
-  <!-- 고풍스러운 연금술 느낌을 위한 폰트 추가 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- 배경 마법 파티클 (CSS로 구현) -->
-  <div class="ambient-background"></div>
-
   <!-- 로비 -->
   <div id="lobby-screen" class="screen active">
-    <div class="glass-panel lobby-box">
-      <div class="logo-area">
-        <span class="logo-icon">⚗️</span>
-        <h1>카드마블</h1>
-        <p class="subtitle">연금술사의 여정</p>
-      </div>
-      
-      <div class="input-group">
-        <input id="player-name" type="text" placeholder="당신의 이름을 새기세요" maxlength="10">
-      </div>
-      
+    <div class="lobby-box">
+      <h1>⚗️ 카드마블</h1>
+      <p class="subtitle">연금술사의 여정</p>
+      <input id="player-name" type="text" placeholder="닉네임 입력" maxlength="10">
       <div class="lobby-buttons">
-        <button id="btn-create" class="magic-btn primary">새로운 여정 만들기</button>
-        <button id="btn-join" class="magic-btn secondary">기존 여정 합류</button>
+        <button id="btn-create">방 만들기</button>
+        <button id="btn-join">방 입장</button>
       </div>
-      
-      <div id="join-row" class="join-row" style="display:none">
-        <input id="room-id-input" type="text" placeholder="마법의 코드 (예: A3F2K)" maxlength="5">
-        <button id="btn-join-confirm" class="magic-btn primary small">입장</button>
+      <div id="join-row" style="display:none">
+        <input id="room-id-input" type="text" placeholder="방 코드 입력 (예: A3F2K)" maxlength="5">
+        <button id="btn-join-confirm">입장</button>
       </div>
       <p id="lobby-error" class="error-msg"></p>
     </div>
@@ -43,56 +28,35 @@
 
   <!-- 대기실 -->
   <div id="waiting-screen" class="screen">
-    <div class="glass-panel waiting-box">
+    <div class="waiting-box">
       <h2>대기실</h2>
-      <div class="room-code-display">
-        <span>초대 코드</span>
-        <strong id="room-code-text">-----</strong>
-      </div>
-      <ul id="player-list" class="mystic-list"></ul>
-      <div class="action-row">
-        <button id="btn-start" class="magic-btn primary" style="display:none">의식 시작</button>
-      </div>
-      <p id="waiting-msg" class="muted">동료 연금술사를 기다리는 중...</p>
+      <div class="room-code-display">방 코드: <span id="room-code-text">-----</span></div>
+      <ul id="player-list"></ul>
+      <button id="btn-start" style="display:none">게임 시작</button>
+      <p id="waiting-msg" class="muted">다른 플레이어를 기다리는 중...</p>
     </div>
   </div>
 
   <!-- 게임 화면 -->
   <div id="game-screen" class="screen">
     <div id="game-layout">
-      <!-- 왼쪽: 보드판 -->
       <div id="board-area">
         <canvas id="board-canvas" width="660" height="660"></canvas>
       </div>
-      
-      <!-- 오른쪽: UI 패널 -->
-      <div id="side-panel" class="glass-panel">
-        <div id="turn-banner" class="turn-banner">누구의 턴인가요?</div>
-        
-        <div class="panel-section">
-          <h3>참여한 연금술사</h3>
-          <div id="player-info-list" class="mystic-list compact"></div>
-        </div>
-        
-        <div class="panel-section flex-grow">
-          <h3>여정의 기록</h3>
-          <div id="log-box" class="log-box"></div>
-        </div>
-        
-        <div id="hand-area" class="panel-section">
-          <div id="inventory" class="inventory-bar"></div>
-          <div class="hand-header">
-            <h3>나의 마법 패</h3>
-            <span class="card-count" id="my-card-count">0장</span>
-          </div>
-          <div id="hand-cards" class="hand-cards"></div>
+      <div id="side-panel">
+        <div id="turn-banner"></div>
+        <div id="player-info-list"></div>
+        <div id="log-box"></div>
+        <div id="hand-area">
+          <div id="inventory" style="display:flex; gap:6px; margin-bottom:8px; min-height:32px;"></div>
+          <div id="hand-label">내 손패</div>
+          <div id="hand-cards"></div>
           <div id="action-buttons">
-            <button id="btn-draw" class="magic-btn primary full-width">카드 드로우</button>
+            <button id="btn-draw">카드 드로우</button>
           </div>
-          
-          <div id="potion-banner" class="potion-banner" style="display:none">
-            <p>🧪 물약 발동! 버릴 카드를 1장 선택하세요.</p>
-            <button id="btn-potion-pass" class="magic-btn secondary small">유지하기</button>
+          <div id="potion-banner" style="display:none">
+            <p>🧪 물약 찬스! 카드를 1장 더 버릴 수 있습니다.</p>
+            <button id="btn-potion-pass">패스</button>
           </div>
         </div>
       </div>
@@ -101,25 +65,10 @@
 
   <!-- 게임 종료 -->
   <div id="result-screen" class="screen">
-    <div class="glass-panel result-box">
-      <h2 id="result-title">여정의 끝</h2>
-      <div class="winner-display">
-        <span class="winner-icon">🏆</span>
-        <p id="result-winner"></p>
-      </div>
-      <button id="btn-restart" class="magic-btn primary">새로운 의식 시작</button>
-    </div>
-  </div>
-
-  <!-- 아이템 상점 모달 -->
-  <div id="shop-modal" class="modal-overlay" style="display:none;">
-    <div class="glass-panel shop-box">
-      <div class="shop-header">
-        <h3>🏪 비밀 상점</h3>
-        <p>필요한 아티팩트를 1개 선택하세요</p>
-      </div>
-      <div id="shop-item-list" class="shop-items"></div>
-      <button onclick="socket.emit('skip-shop'); document.getElementById('shop-modal').style.display='none';" class="magic-btn secondary full-width mt-4">지나치기</button>
+    <div class="result-box">
+      <h2 id="result-title">게임 종료</h2>
+      <p id="result-winner"></p>
+      <button id="btn-restart">다시 하기</button>
     </div>
   </div>
 
@@ -128,5 +77,18 @@
   <script src="js/hand.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
+<!-- 아이템 상점 모달 -->
+<div id="shop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  align-items:center; justify-content:center; z-index:100;">
+  <div style="background:linear-gradient(145deg,#2C1A08,#1E1005); border:2px solid #C8A96E;
+    border-radius:16px; padding:2rem; width:360px; text-align:center;
+    box-shadow:0 0 40px rgba(200,169,110,0.3);">
+    <h3 style="color:#C8A96E; margin-bottom:.5rem; font-family:'Cinzel',serif;">🏪 아이템 상점</h3>
+    <p style="color:#8B6340; font-size:.9rem; margin-bottom:1.2rem; font-style:italic;">아이템 1개를 선택하세요</p>
+    <div id="shop-item-list" style="display:flex; flex-direction:column; gap:.7rem;"></div>
+    <button onclick="socket.emit('skip-shop'); document.getElementById('shop-modal').style.display='none';"
+      style="margin-top:1.2rem; width:100%;">패스</button>
+  </div>
+</div>
 </body>
 </html>
