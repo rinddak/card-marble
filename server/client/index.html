@@ -44,11 +44,10 @@
   <!-- 게임 화면 -->
   <div id="game-screen" class="screen">
     <div id="game-layout">
-
-      <!-- 보드 영역 -->
       <div id="board-area">
         <div id="board-wrap">
-          <!-- 위변 + 모서리 (27, 26~19, 18) -->
+
+          <!-- 위변: 27, 26~19, 18 -->
           <div class="board-row top-row">
             <div class="cell corner" id="cell-27"></div>
             <div class="cell" id="cell-26"></div>
@@ -62,9 +61,8 @@
             <div class="cell corner" id="cell-18"></div>
           </div>
 
-          <!-- 중간 행 -->
+          <!-- 중간 -->
           <div class="board-row mid-row">
-            <!-- 왼변 (28~35) -->
             <div class="board-col left-col">
               <div class="cell side" id="cell-28"></div>
               <div class="cell side" id="cell-29"></div>
@@ -75,8 +73,6 @@
               <div class="cell side" id="cell-34"></div>
               <div class="cell side" id="cell-35"></div>
             </div>
-
-            <!-- 중앙 마법진 -->
             <div id="board-center">
               <div id="magic-circle">
                 <div class="magic-ring ring1"></div>
@@ -87,8 +83,6 @@
                 <div class="magic-subtitle">카드마블</div>
               </div>
             </div>
-
-            <!-- 오른변 (17~10) -->
             <div class="board-col right-col">
               <div class="cell side" id="cell-17"></div>
               <div class="cell side" id="cell-16"></div>
@@ -101,7 +95,7 @@
             </div>
           </div>
 
-          <!-- 아래변 + 모서리 (0, 1~8, 9) -->
+          <!-- 아래변: 0, 1~8, 9 -->
           <div class="board-row bottom-row">
             <div class="cell corner" id="cell-0"></div>
             <div class="cell" id="cell-1"></div>
@@ -114,6 +108,7 @@
             <div class="cell" id="cell-8"></div>
             <div class="cell corner" id="cell-9"></div>
           </div>
+
         </div>
       </div>
 
@@ -130,8 +125,11 @@
             <button id="btn-draw">카드 드로우</button>
           </div>
           <div id="potion-banner" style="display:none">
-            <p>🧪 물약 찬스! 카드를 1장 더 버릴 수 있습니다.</p>
+            <p>🔮 수정구슬! 버릴 카드를 선택하세요.</p>
             <button id="btn-potion-pass">패스</button>
+          </div>
+          <div id="alch-boost-banner" style="display:none">
+            <p>✨ 연금술 촉진! 버릴 카드를 선택하세요.</p>
           </div>
         </div>
       </div>
@@ -147,13 +145,13 @@
     </div>
   </div>
 
-  <!-- 아이템 상점 모달 -->
-  <div id="shop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:100;">
-    <div class="shop-modal-inner">
-      <h3 class="shop-title">🏪 아이템 상점</h3>
-      <p class="shop-desc-text">아이템 1개를 선택하세요</p>
-      <div id="shop-item-list"></div>
-      <button class="shop-pass-btn" onclick="socket.emit('skip-shop'); document.getElementById('shop-modal').style.display='none';">패스</button>
+  <!-- 칸 설명 팝업 -->
+  <div id="cell-desc-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index:200;">
+    <div class="cell-desc-inner">
+      <div class="cell-desc-icon" id="cell-desc-icon"></div>
+      <div class="cell-desc-title" id="cell-desc-title"></div>
+      <div class="cell-desc-text" id="cell-desc-text"></div>
+      <button id="cell-desc-close">닫기</button>
     </div>
   </div>
 
