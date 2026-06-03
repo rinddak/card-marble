@@ -6,8 +6,9 @@ let isHost = false;
 let gameState = null;
 let myHand = [];
 let potionMode = false;
+let alchBoostMode = false;
 
-// ── 로비 ───────────────────────────────────────
+// ── 로비 ──
 document.getElementById("btn-create").addEventListener("click", () => {
   const name = document.getElementById("player-name").value.trim();
   if (!name) return setLobbyError("닉네임을 입력해주세요.");
@@ -31,29 +32,24 @@ function setLobbyError(msg) {
   document.getElementById("lobby-error").textContent = msg;
 }
 
-// ── 대기실 ───────────────────────────────────────
-document.getElementById("btn-start").addEventListener("click", () => {
-  socket.emit("start-game");
-});
-
-document.getElementById("btn-draw").addEventListener("click", () => {
-  socket.emit("draw-card");
-});
-
+document.getElementById("btn-start").addEventListener("click", () => socket.emit("start-game"));
+document.getElementById("btn-draw").addEventListener("click", () => socket.emit("draw-card"));
 document.getElementById("btn-potion-pass").addEventListener("click", () => {
   potionMode = false;
   document.getElementById("potion-banner").style.display = "none";
   socket.emit("potion-pass");
 });
+document.getElementById("btn-restart").addEventListener("click", () => showScreen("lobby-screen"));
 
-document.getElementById("btn-restart").addEventListener("click", () => {
-  showScreen("lobby-screen");
+// 칸 설명 모달 닫기
+document.getElementById("cell-desc-close").addEventListener("click", () => {
+  document.getElementById("cell-desc-modal").style.display = "none";
 });
 
-// ── 소켓 이벤트 ───────────────────────────────────
+// ── 소켓 이벤트 ──
 socket.on("connect", () => { myId = socket.id; });
 
-socket.on("room-created", ({ roomId, player }) => {
+socket.on("room-created", ({ roomId }) => {
   myRoomId = roomId;
   isHost = true;
   document.getElementById("room-code-text").textContent = roomId;
@@ -61,7 +57,7 @@ socket.on("room-created", ({ roomId, player }) => {
   showScreen("waiting-screen");
 });
 
-socket.on("room-joined", ({ player }) => {
+socket.on("room-joined", () => {
   isHost = false;
   document.getElementById("btn-start").style.display = "none";
   showScreen("waiting-screen");
@@ -81,114 +77,106 @@ socket.on("room-updated", (state) => {
 socket.on("game-started", (state) => {
   gameState = state;
   showScreen("game-screen");
-  addLog("게임 시작!");
+  addLog("✦ 연금술 실험 시작!");
   renderGameState();
 });
 
 socket.on("game-updated", (state) => {
   gameState = state;
   renderGameState();
+
+  // 연금술 촉진 모드
+  const isMyAlch = state.alchBoostPlayer === myId;
+  const alchBanner = document.getElementById("alch-boost-banner");
+  if (isMyAlch) {
+    alchBoostMode = true;
+    alchBanner.style.display = "block";
+  } else {
+    alchBoostMode = false;
+    alchBanner.style.display = "none";
+  }
 });
 
 socket.on("hand-updated", ({ hand }) => {
   myHand = hand;
   const isMyTurn = gameState && gameState.currentTurn === myId;
-  renderHand(myHand, isMyTurn && !potionMode, false, handleCardPlay);
+  renderHand(myHand, (isMyTurn && !potionMode && !alchBoostMode) || alchBoostMode, potionMode || alchBoostMode, handleCardPlay);
 });
 
 socket.on("cell-events", ({ events }) => {
-  events.forEach(e => addLog(e.message, true));
+  events.forEach(e => { if (e.message) addLog(e.message, true); });
 });
 
 socket.on("potion-chance", () => {
   potionMode = true;
   document.getElementById("potion-banner").style.display = "block";
-  addLog("물약 찬스! 카드를 1장 더 버릴 수 있습니다.", true);
+  addLog("🔮 수정구슬! 카드 1장을 골라 버릴 수 있습니다.", true);
   renderHand(myHand, true, true, handleCardPlay);
 });
 
-socket.on("game-updated", (state) => {
-  gameState = state;
-  renderGameState();
-
-  // 상점 UI
-  const isMyShop = state.shopPlayer === myId;
-  const shopModal = document.getElementById("shop-modal");
-  if (isMyShop) {
-    renderShop(state.shopItems);
-    shopModal.style.display = "flex";
-  } else {
-    shopModal.style.display = "none";
-  }
+socket.on("alch-boost-chance", () => {
+  alchBoostMode = true;
+  document.getElementById("alch-boost-banner").style.display = "block";
+  addLog("✨ 연금술 촉진! 버릴 카드를 선택하세요.", true);
+  renderHand(myHand, true, true, handleCardPlay);
 });
 
 socket.on("game-over", ({ winnerName }) => {
   document.getElementById("result-winner").textContent = `🏆 ${winnerName} 승리!`;
   showScreen("result-screen");
-  addLog(`${winnerName}이(가) 승리했습니다!`, true);
 });
 
-socket.on("error", ({ message }) => {
-  addLog("오류: " + message);
-});
+socket.on("error", ({ message }) => addLog("오류: " + message));
 
-// ── 게임 렌더링 ───────────────────────────────────
+// ── 렌더링 ──
 function renderGameState() {
   if (!gameState) return;
-  const canvas = document.getElementById("board-canvas");
-  drawBoard(canvas, gameState.board, gameState.players);
+  drawBoard(null, gameState.board, gameState.players);
   updatePlayerInfoList(gameState.players, gameState.currentTurn, myId);
   updateTurnBanner(gameState.currentTurn, gameState.players, myId);
 
   const isMyTurn = gameState.currentTurn === myId;
-  document.getElementById("btn-draw").disabled = !isMyTurn || potionMode;
+  document.getElementById("btn-draw").disabled = !isMyTurn || potionMode || alchBoostMode;
+
+  // 찬스 카드 렌더링
+  const me = gameState.players.find(p => p.id === myId);
+  if (me) renderChanceCards(me.chanceCards || []);
 
   if (myHand.length > 0) {
-    renderHand(myHand, isMyTurn && !potionMode, potionMode, handleCardPlay);
+    renderHand(myHand, isMyTurn && !potionMode && !alchBoostMode, potionMode || alchBoostMode, handleCardPlay);
   }
 }
 
-// 내 인벤토리 렌더링
-  const me = gameState.players.find(p => p.id === myId);
-  if (me) renderInventory(me.items);
+function renderChanceCards(cards) {
+  const inv = document.getElementById("inventory");
+  inv.innerHTML = "";
+  if (cards.length === 0) return;
 
-function handleCardPlay(cardIndex, isPotionMode) {
-  if (isPotionMode) {
+  const label = document.createElement("div");
+  label.className = "chance-label";
+  label.textContent = "✦ 찬스 카드";
+  inv.appendChild(label);
+
+  cards.forEach(card => {
+    const btn = document.createElement("button");
+    btn.className = "inv-btn";
+    btn.title = `${card.name}: ${card.desc}`;
+    btn.innerHTML = `${card.icon}<span class="inv-name">${card.name}</span>`;
+    btn.onclick = () => socket.emit("use-chance-card", { cardId: card.id });
+    inv.appendChild(btn);
+  });
+}
+
+function handleCardPlay(cardIndex, isSpecialMode) {
+  if (alchBoostMode) {
+    socket.emit("alch-boost-discard", { cardIndex });
+    alchBoostMode = false;
+    document.getElementById("alch-boost-banner").style.display = "none";
+  } else if (isSpecialMode) {
     socket.emit("potion-discard", { cardIndex });
     potionMode = false;
     document.getElementById("potion-banner").style.display = "none";
   } else {
     socket.emit("play-card", { cardIndex });
   }
-}
-
-function renderShop(items) {
-  const list = document.getElementById("shop-item-list");
-  list.innerHTML = "";
-  items.forEach(item => {
-    const btn = document.createElement("button");
-    btn.className = "shop-item-btn";
-    btn.innerHTML = `<span class="shop-icon">${item.icon}</span>
-      <span class="shop-name">${item.name}</span>
-      <span class="shop-desc">${item.desc}</span>`;
-    btn.onclick = () => {
-      socket.emit("buy-item", { itemId: item.id });
-      document.getElementById("shop-modal").style.display = "none";
-    };
-    list.appendChild(btn);
-  });
-}
-
-// 인벤토리 아이템 사용
-function renderInventory(items) {
-  const inv = document.getElementById("inventory");
-  inv.innerHTML = "";
-  items.forEach(item => {
-    const btn = document.createElement("button");
-    btn.className = "inv-btn";
-    btn.title = item.desc;
-    btn.textContent = item.icon;
-    btn.onclick = () => socket.emit("use-item", { itemId: item.id });
-    inv.appendChild(btn);
-  });
 }
