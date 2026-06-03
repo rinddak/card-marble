@@ -86,6 +86,38 @@ io.on("connection", (socket) => {
     if (room) io.to(room.id).emit("game-updated", room.getPublicState());
   });
 
+  // 찬스 카드 사용
+  socket.on("use-chance-card", ({ cardId }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.useChanceCard(socket.id, cardId);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    io.to(room.id).emit("game-updated", room.getPublicState());
+    room.players.forEach(p => io.to(p.id).emit("hand-updated", { hand:p.hand }));
+    if (result.events?.length) io.to(room.id).emit("cell-events", { events:result.events });
+    if (result.alchBoost) socket.emit("alch-boost-chance");
+    if (result.winner) {
+      io.to(room.id).emit("game-over", { winnerId:result.winner.id, winnerName:result.winner.name });
+      delete rooms[room.id];
+    } else {
+      io.to(room.id).emit("cell-events", { events:[{ message:result.message }] });
+    }
+  });
+
+  // 연금술 촉진 카드 버리기
+  socket.on("alch-boost-discard", ({ cardIndex }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.alchBoostDiscard(socket.id, cardIndex);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    io.to(room.id).emit("game-updated", room.getPublicState());
+    room.players.forEach(p => io.to(p.id).emit("hand-updated", { hand:p.hand }));
+    if (result.winner) {
+      io.to(room.id).emit("game-over", { winnerId:result.winner.id, winnerName:result.winner.name });
+      delete rooms[room.id];
+    }
+  });
+
   // 아이템 구매
   socket.on("buy-item", ({ itemId }) => {
     const room = rooms[socket.data.roomId];
