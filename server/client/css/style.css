@@ -598,3 +598,66 @@ button:disabled { background: #1E1003; color: #3A2010; border-color: #2A1A08; cu
   .card { width: 46px; height: 66px; }
   .shop-modal-inner { width: 95%; padding: 1.2rem; }
 }
+/* ── 찬스 카드 ── */
+.chance-label {
+  font-size: .8rem;
+  color: var(--wood-light);
+  font-family: 'Cinzel', serif;
+  margin-bottom: 4px;
+  width: 100%;
+}
+.inv-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+  background: linear-gradient(145deg, #3D2008, #2C1A08);
+  border: 1px solid var(--wood-bright);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all .15s;
+  font-family: 'Crimson Text', serif;
+}
+.inv-btn:hover {
+  background: linear-gradient(145deg, #5C3A1E, #3D2008);
+  box-shadow: 0 0 12px rgba(200,169,110,0.3);
+}
+.inv-name { font-size: .8rem; color: var(--wood-bright); }
+
+#alch-boost-banner {
+  background: linear-gradient(145deg, #2A3D1A, #1A2A0E);
+  border: 1px solid #4A8C4A;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 8px;
+  font-size: .88rem;
+  text-align: center;
+  color: #A8D4A8;
+}
+
+/* ── 칸 설명 팝업 ── */
+.cell-desc-inner {
+  background: linear-gradient(145deg, #2C1A08, #1E1005);
+  border: 2px solid var(--wood-bright);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(200,169,110,0.3);
+}
+.cell-desc-icon { font-size: 3rem; margin-bottom: .5rem; }
+.cell-desc-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  color: var(--wood-bright);
+  margin-bottom: .8rem;
+}
+.cell-desc-text {
+  font-size: .95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
