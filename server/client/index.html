@@ -17,14 +17,37 @@
       <h1>⚗️ 카드마블</h1>
       <p class="subtitle">초보 연금술사의 여정</p>
       <input id="player-name" type="text" placeholder="연금술사 이름 입력" maxlength="10">
-      <div class="lobby-buttons">
-        <button id="btn-create">방 만들기</button>
-        <button id="btn-join">방 입장</button>
+
+      <!-- 모드 선택 -->
+      <div class="mode-select">
+        <button id="btn-single" class="mode-btn active-mode">🧪 싱글 모드</button>
+        <button id="btn-multi-mode" class="mode-btn">⚔️ 멀티 모드</button>
       </div>
-      <div id="join-row" style="display:none">
-        <input id="room-id-input" type="text" placeholder="방 코드 입력" maxlength="5">
-        <button id="btn-join-confirm">입장</button>
+
+      <!-- 싱글 모드 옵션 -->
+      <div id="single-options">
+        <p class="mode-desc">봇 수를 선택하세요</p>
+        <div class="bot-select">
+          <button class="bot-btn active-bot" data-bot="0">혼자</button>
+          <button class="bot-btn" data-bot="1">봇 1명</button>
+          <button class="bot-btn" data-bot="2">봇 2명</button>
+          <button class="bot-btn" data-bot="3">봇 3명</button>
+        </div>
+        <button id="btn-start-single">실험 시작!</button>
       </div>
+
+      <!-- 멀티 모드 옵션 -->
+      <div id="multi-options" style="display:none">
+        <div class="lobby-buttons">
+          <button id="btn-create">방 만들기</button>
+          <button id="btn-join">방 입장</button>
+        </div>
+        <div id="join-row" style="display:none">
+          <input id="room-id-input" type="text" placeholder="방 코드 입력 (숫자 5자리)" maxlength="5">
+          <button id="btn-join-confirm">입장</button>
+        </div>
+      </div>
+
       <p id="lobby-error" class="error-msg"></p>
       <div class="lobby-deco bottom"></div>
     </div>
