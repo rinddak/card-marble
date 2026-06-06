@@ -660,4 +660,77 @@ button:disabled { background: #1E1003; color: #3A2010; border-color: #2A1A08; cu
   line-height: 1.6;
   margin-bottom: 1.2rem;
   font-style: italic;
+
+  /* ── 재료 UI ── */
+#ingredient-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.ing-label {
+  font-size: .8rem;
+  color: var(--wood-light);
+  font-family: 'Cinzel', serif;
+  width: 100%;
+  margin-bottom: 2px;
+}
+.ing-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: .82rem;
+  border: 1px solid #3A2010;
+  transition: all .2s;
+}
+.ing-empty {
+  background: rgba(0,0,0,0.4);
+  color: #4A3020;
+  filter: grayscale(1);
+  opacity: .5;
+}
+.ing-got {
+  background: linear-gradient(145deg, #3D2008, #2C1A08);
+  border-color: var(--wood-bright);
+  color: var(--text-main);
+  box-shadow: 0 0 8px rgba(200,169,110,0.2);
+  filter: none;
+  opacity: 1;
+}
+.ing-name { font-size: .75rem; }
+
+/* ── 타겟 선택 버튼 ── */
+.target-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(145deg, #3D2008, #2C1A08);
+  border: 1px solid var(--wood-light);
+  border-radius: 10px;
+  color: var(--text-main);
+  cursor: pointer;
+  font-family: 'Crimson Text', serif;
+  font-size: 1rem;
+  transition: all .15s;
+}
+.target-btn:hover {
+  background: linear-gradient(145deg, #5C3A1E, #3D2008);
+  border-color: var(--wood-bright);
+}
+
+/* ── 경고 팝업 ── */
+.warning-inner {
+  background: linear-gradient(145deg, #3D1008, #2C0A05);
+  border: 2px solid #C07050;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(192,112,80,0.4);
+}
 }
