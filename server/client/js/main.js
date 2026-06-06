@@ -1,5 +1,4 @@
-const socket = io("https://여기에Railway주소.railway.app");
-
+const socket = io("https://card-marble-production.up.railway.app");
 let myId = null;
 let myRoomId = null;
 let isHost = false;
