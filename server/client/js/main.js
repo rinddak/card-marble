@@ -1,4 +1,4 @@
-const socket = io("https://card-marble-production.up.railway.app");
+const socket = io("https://여기에Railway주소.railway.app");
 
 let myId = null;
 let myRoomId = null;
@@ -40,8 +40,6 @@ document.getElementById("btn-potion-pass").addEventListener("click", () => {
   socket.emit("potion-pass");
 });
 document.getElementById("btn-restart").addEventListener("click", () => showScreen("lobby-screen"));
-
-// 칸 설명 모달 닫기
 document.getElementById("cell-desc-close").addEventListener("click", () => {
   document.getElementById("cell-desc-modal").style.display = "none";
 });
@@ -85,10 +83,17 @@ socket.on("game-updated", (state) => {
   gameState = state;
   renderGameState();
 
+  // 연금술 타겟 선택 UI
+  if (state.alchemySelectPlayer === myId) {
+    showTargetSelect("alchemy");
+  }
+  // 시간 역행 타겟 선택 UI
+  if (state.timeReversePlayer === myId) {
+    showTargetSelect("time-reverse");
+  }
   // 연금술 촉진 모드
-  const isMyAlch = state.alchBoostPlayer === myId;
   const alchBanner = document.getElementById("alch-boost-banner");
-  if (isMyAlch) {
+  if (state.alchBoostPlayer === myId) {
     alchBoostMode = true;
     alchBanner.style.display = "block";
   } else {
@@ -126,21 +131,63 @@ socket.on("game-over", ({ winnerName }) => {
   showScreen("result-screen");
 });
 
-socket.on("error", ({ message }) => addLog("오류: " + message));
+socket.on("error", ({ message }) => {
+  addLog("⚠️ " + message);
+  // 재료 경고는 팝업으로 표시
+  if (message.includes("재료")) showIngredientWarning(message);
+});
+
+// ── 플레이어 타겟 선택 UI ──
+function showTargetSelect(type) {
+  const modal = document.getElementById("target-select-modal");
+  const title = document.getElementById("target-select-title");
+  const list = document.getElementById("target-select-list");
+
+  title.textContent = type === "alchemy"
+    ? "⚗️ 연금술 - 공격할 플레이어 선택"
+    : "🔄 시간 역행 - 대상 플레이어 선택";
+
+  list.innerHTML = "";
+  gameState.players
+    .filter(p => p.id !== myId)
+    .forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "target-btn";
+      btn.innerHTML = `<span class="player-dot" style="background:${p.color}"></span> ${p.name} (${p.handCount}장)`;
+      btn.onclick = () => {
+        if (type === "alchemy") socket.emit("alchemy-target", { targetId: p.id });
+        else socket.emit("time-reverse-target", { targetId: p.id });
+        modal.style.display = "none";
+      };
+      list.appendChild(btn);
+    });
+
+  modal.style.display = "flex";
+}
+
+// 재료 경고 팝업
+function showIngredientWarning(msg) {
+  const modal = document.getElementById("ingredient-warning-modal");
+  document.getElementById("ingredient-warning-text").textContent = msg;
+  modal.style.display = "flex";
+  setTimeout(() => { modal.style.display = "none"; }, 3000);
+}
 
 // ── 렌더링 ──
 function renderGameState() {
   if (!gameState) return;
   drawBoard(null, gameState.board, gameState.players);
   updatePlayerInfoList(gameState.players, gameState.currentTurn, myId);
-  updateTurnBanner(gameState.currentTurn, gameState.players, myId);
+  updateTurnBanner(gameState.players, gameState.currentTurn, myId);
 
   const isMyTurn = gameState.currentTurn === myId;
   document.getElementById("btn-draw").disabled = !isMyTurn || potionMode || alchBoostMode;
 
-  // 찬스 카드 렌더링
   const me = gameState.players.find(p => p.id === myId);
-  if (me) renderChanceCards(me.chanceCards || []);
+  if (me) {
+    renderChanceCards(me.chanceCards || []);
+    renderIngredients(me.ingredients || []);
+  }
 
   if (myHand.length > 0) {
     renderHand(myHand, isMyTurn && !potionMode && !alchBoostMode, potionMode || alchBoostMode, handleCardPlay);
@@ -151,12 +198,10 @@ function renderChanceCards(cards) {
   const inv = document.getElementById("inventory");
   inv.innerHTML = "";
   if (cards.length === 0) return;
-
   const label = document.createElement("div");
   label.className = "chance-label";
   label.textContent = "✦ 찬스 카드";
   inv.appendChild(label);
-
   cards.forEach(card => {
     const btn = document.createElement("button");
     btn.className = "inv-btn";
@@ -165,6 +210,23 @@ function renderChanceCards(cards) {
     btn.onclick = () => socket.emit("use-chance-card", { cardId: card.id });
     inv.appendChild(btn);
   });
+}
+
+function renderIngredients(ingredients) {
+  const box = document.getElementById("ingredient-box");
+  const all = [
+    { id:"fire",  icon:"🔥", name:"불꽃" },
+    { id:"water", icon:"💧", name:"물"   },
+    { id:"earth", icon:"🌿", name:"대지" },
+    { id:"wind",  icon:"🌪️", name:"바람" },
+  ];
+  box.innerHTML = "<div class='ing-label'>✦ 재료</div>" +
+    all.map(ing => `
+      <div class="ing-item ${ingredients.includes(ing.id) ? 'ing-got' : 'ing-empty'}">
+        <span>${ing.icon}</span>
+        <span class="ing-name">${ing.name}</span>
+      </div>
+    `).join("");
 }
 
 function handleCardPlay(cardIndex, isSpecialMode) {
