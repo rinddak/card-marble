@@ -734,3 +734,51 @@ button:disabled { background: #1E1003; color: #3A2010; border-color: #2A1A08; cu
   box-shadow: 0 0 40px rgba(192,112,80,0.4);
 }
 }
+
+/* ── 모드 선택 ── */
+.mode-select {
+  display: flex;
+  gap: .6rem;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  background: linear-gradient(145deg, #2A1506, #1E1003);
+  border: 1px solid #4A2A0E;
+  color: var(--text-muted);
+}
+.mode-btn.active-mode {
+  border-color: var(--wood-bright);
+  color: #FFE4B5;
+  background: linear-gradient(145deg, #5C3A1E, #3D2008);
+  box-shadow: 0 0 12px rgba(200,169,110,0.2);
+}
+.mode-desc {
+  color: var(--text-muted);
+  font-size: .9rem;
+  margin-bottom: .8rem;
+  font-style: italic;
+}
+
+/* ── 봇 선택 ── */
+.bot-select {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.bot-btn {
+  padding: 8px 14px;
+  background: linear-gradient(145deg, #2A1506, #1E1003);
+  border: 1px solid #4A2A0E;
+  color: var(--text-muted);
+  font-size: .9rem;
+}
+.bot-btn.active-bot {
+  border-color: var(--wood-bright);
+  color: #FFE4B5;
+  background: linear-gradient(145deg, #5C3A1E, #3D2008);
+}
