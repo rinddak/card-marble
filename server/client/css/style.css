@@ -782,3 +782,9 @@ button:disabled { background: #1E1003; color: #3A2010; border-color: #2A1A08; cu
   color: #FFE4B5;
   background: linear-gradient(145deg, #5C3A1E, #3D2008);
 }
+
+.cell-ing-fire  { background: linear-gradient(145deg, #D4A090, #C08070); border-color: #8C4A3A; }
+.cell-ing-water { background: linear-gradient(145deg, #90A8D4, #7090C0); border-color: #3A5A8C; }
+.cell-ing-earth { background: linear-gradient(145deg, #A0C090, #88A878); border-color: #4A7A3A; }
+.cell-ing-wind  { background: linear-gradient(145deg, #C0D0D4, #A0B8C0); border-color: #5A7A8C; }
+.chance-empty   { font-size:.8rem; color:#4A3020; font-style:italic; }
