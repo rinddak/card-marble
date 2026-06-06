@@ -104,6 +104,27 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 연금술 타겟 지정
+  socket.on("alchemy-target", ({ targetId }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.alchemyTarget(socket.id, targetId);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    io.to(room.id).emit("game-updated", room.getPublicState());
+    room.players.forEach(p => io.to(p.id).emit("hand-updated", { hand:p.hand }));
+    io.to(room.id).emit("cell-events", { events:[{ message:result.message }] });
+  });
+
+  // 시간 역행 타겟 지정
+  socket.on("time-reverse-target", ({ targetId }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.timeReverseTarget(socket.id, targetId);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    io.to(room.id).emit("game-updated", room.getPublicState());
+    io.to(room.id).emit("cell-events", { events:[{ message:result.message }] });
+  });
+
   // 연금술 촉진 카드 버리기
   socket.on("alch-boost-discard", ({ cardIndex }) => {
     const room = rooms[socket.data.roomId];
