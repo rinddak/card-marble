@@ -44,6 +44,39 @@ document.getElementById("cell-desc-close").addEventListener("click", () => {
   document.getElementById("cell-desc-modal").style.display = "none";
 });
 
+// 모드 선택
+let selectedBotCount = 0;
+
+document.getElementById("btn-single").addEventListener("click", () => {
+  document.getElementById("btn-single").classList.add("active-mode");
+  document.getElementById("btn-multi-mode").classList.remove("active-mode");
+  document.getElementById("single-options").style.display = "block";
+  document.getElementById("multi-options").style.display = "none";
+});
+
+document.getElementById("btn-multi-mode").addEventListener("click", () => {
+  document.getElementById("btn-multi-mode").classList.add("active-mode");
+  document.getElementById("btn-single").classList.remove("active-mode");
+  document.getElementById("multi-options").style.display = "block";
+  document.getElementById("single-options").style.display = "none";
+});
+
+// 봇 수 선택
+document.querySelectorAll(".bot-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".bot-btn").forEach(b => b.classList.remove("active-bot"));
+    btn.classList.add("active-bot");
+    selectedBotCount = parseInt(btn.dataset.bot);
+  });
+});
+
+// 싱글 시작
+document.getElementById("btn-start-single").addEventListener("click", () => {
+  const name = document.getElementById("player-name").value.trim();
+  if (!name) return setLobbyError("닉네임을 입력해주세요.");
+  socket.emit("start-single", { playerName: name, botCount: selectedBotCount });
+});
+
 // ── 소켓 이벤트 ──
 socket.on("connect", () => { myId = socket.id; });
 
