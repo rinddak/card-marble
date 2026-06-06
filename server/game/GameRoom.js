@@ -1,3 +1,4 @@
+const ALL_INGREDIENTS = ["fire","water","earth","wind"];
 const { createShuffledDeck } = require("./Deck");
 const { createBoard, applyCellEffect, INGREDIENTS } = require("./Board");
 
@@ -286,3 +287,86 @@ class GameRoom {
 }
 
 module.exports = { GameRoom };
+
+
+// 봇 추가
+  addBot(id, name) {
+    const colors = ["#e74c3c","#3498db","#2ecc71","#f39c12"];
+    const bot = {
+      id, name,
+      isBot: true,
+      pos: 0,
+      hand: [],
+      chanceCards: [],
+      ingredients: [],
+      reverseNext: false,
+      doubleNext: false,
+      protected: false,
+      color: colors[this.players.length]
+    };
+    this.players.push(bot);
+    return bot;
+  }
+
+  // 봇 턴 처리 (랜덤)
+  doBotTurn() {
+    const bot = this.getCurrentPlayer();
+    if (!bot || !bot.isBot) return null;
+
+    // 찬스 카드 랜덤 사용 (30% 확률)
+    if (bot.chanceCards.length > 0 && Math.random() < 0.3) {
+      const card = bot.chanceCards[Math.floor(Math.random() * bot.chanceCards.length)];
+      const result = this.useChanceCard(bot.id, card.id);
+
+      // 타겟 선택 필요한 카드 처리
+      if (result.timeReverse) {
+        const others = this.players.filter(p => p.id !== bot.id);
+        if (others.length > 0) {
+          const target = others[Math.floor(Math.random() * others.length)];
+          return this.timeReverseTarget(bot.id, target.id);
+        }
+      }
+      if (result.alchBoost && bot.hand.length > 0) {
+        return this.alchBoostDiscard(bot.id, Math.floor(Math.random() * bot.hand.length));
+      }
+      return result;
+    }
+
+    // 카드 내기
+    if (bot.hand.length > 0) {
+      const cardIndex = Math.floor(Math.random() * bot.hand.length);
+
+      // 마지막 카드 버릴 때 재료 체크 (봇은 그냥 드로우)
+      if (bot.hand.length === 1) {
+        const hasAll = ALL_INGREDIENTS.every(id => bot.ingredients.includes(id));
+        if (!hasAll) {
+          if (this.deck.length > 0) bot.hand.push(this.deck.pop());
+          this._nextTurn();
+          return { success:true, events:[], winner:null };
+        }
+      }
+
+      const result = this.playCard(bot.id, cardIndex);
+
+      // 연금술 타겟 자동 선택
+      if (result.alchemySelect) {
+        const others = this.players.filter(p => p.id !== bot.id);
+        if (others.length > 0) {
+          const target = others[Math.floor(Math.random() * others.length)];
+          return this.alchemyTarget(bot.id, target.id);
+        }
+      }
+      // 수정구슬 자동 처리
+      if (result.potionChance) {
+        if (bot.hand.length > 0) {
+          return this.potionDiscard(bot.id, Math.floor(Math.random() * bot.hand.length));
+        } else {
+          this.clearPotionChance(bot.id);
+        }
+      }
+      return result;
+    } else {
+      // 손패 없으면 드로우
+      return this.drawCard(bot.id);
+    }
+  }
