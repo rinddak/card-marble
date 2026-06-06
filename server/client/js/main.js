@@ -1,4 +1,5 @@
-const socket = io("https://card-marble-production.up.railway.app");
+const socket = io();
+
 let myId = null;
 let myRoomId = null;
 let isHost = false;
@@ -6,46 +7,9 @@ let gameState = null;
 let myHand = [];
 let potionMode = false;
 let alchBoostMode = false;
-
-// ── 로비 ──
-document.getElementById("btn-create").addEventListener("click", () => {
-  const name = document.getElementById("player-name").value.trim();
-  if (!name) return setLobbyError("닉네임을 입력해주세요.");
-  socket.emit("create-room", { playerName: name });
-});
-
-document.getElementById("btn-join").addEventListener("click", () => {
-  const row = document.getElementById("join-row");
-  row.style.display = row.style.display === "none" ? "flex" : "none";
-});
-
-document.getElementById("btn-join-confirm").addEventListener("click", () => {
-  const name = document.getElementById("player-name").value.trim();
-  const roomId = document.getElementById("room-id-input").value.trim().toUpperCase();
-  if (!name) return setLobbyError("닉네임을 입력해주세요.");
-  if (!roomId) return setLobbyError("방 코드를 입력해주세요.");
-  socket.emit("join-room", { roomId, playerName: name });
-});
-
-function setLobbyError(msg) {
-  document.getElementById("lobby-error").textContent = msg;
-}
-
-document.getElementById("btn-start").addEventListener("click", () => socket.emit("start-game"));
-document.getElementById("btn-draw").addEventListener("click", () => socket.emit("draw-card"));
-document.getElementById("btn-potion-pass").addEventListener("click", () => {
-  potionMode = false;
-  document.getElementById("potion-banner").style.display = "none";
-  socket.emit("potion-pass");
-});
-document.getElementById("btn-restart").addEventListener("click", () => showScreen("lobby-screen"));
-document.getElementById("cell-desc-close").addEventListener("click", () => {
-  document.getElementById("cell-desc-modal").style.display = "none";
-});
-
-// 모드 선택
 let selectedBotCount = 0;
 
+// ── 로비 ──
 document.getElementById("btn-single").addEventListener("click", () => {
   document.getElementById("btn-single").classList.add("active-mode");
   document.getElementById("btn-multi-mode").classList.remove("active-mode");
@@ -60,7 +24,6 @@ document.getElementById("btn-multi-mode").addEventListener("click", () => {
   document.getElementById("single-options").style.display = "none";
 });
 
-// 봇 수 선택
 document.querySelectorAll(".bot-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".bot-btn").forEach(b => b.classList.remove("active-bot"));
@@ -69,11 +32,56 @@ document.querySelectorAll(".bot-btn").forEach(btn => {
   });
 });
 
-// 싱글 시작
 document.getElementById("btn-start-single").addEventListener("click", () => {
   const name = document.getElementById("player-name").value.trim();
   if (!name) return setLobbyError("닉네임을 입력해주세요.");
-  socket.emit("start-single", { playerName: name, botCount: selectedBotCount });
+  socket.emit("start-single", { playerName:name, botCount:selectedBotCount });
+});
+
+document.getElementById("btn-create").addEventListener("click", () => {
+  const name = document.getElementById("player-name").value.trim();
+  if (!name) return setLobbyError("닉네임을 입력해주세요.");
+  socket.emit("create-room", { playerName:name });
+});
+
+document.getElementById("btn-join").addEventListener("click", () => {
+  const row = document.getElementById("join-row");
+  row.style.display = row.style.display === "none" ? "flex" : "none";
+});
+
+document.getElementById("btn-join-confirm").addEventListener("click", () => {
+  const name = document.getElementById("player-name").value.trim();
+  const roomId = document.getElementById("room-id-input").value.trim();
+  if (!name) return setLobbyError("닉네임을 입력해주세요.");
+  if (!roomId) return setLobbyError("방 코드를 입력해주세요.");
+  socket.emit("join-room", { roomId, playerName:name });
+});
+
+function setLobbyError(msg) {
+  document.getElementById("lobby-error").textContent = msg;
+}
+
+document.getElementById("btn-start").addEventListener("click", () => socket.emit("start-game"));
+document.getElementById("btn-draw").addEventListener("click", () => socket.emit("draw-card"));
+
+document.getElementById("btn-potion-pass").addEventListener("click", () => {
+  potionMode = false;
+  document.getElementById("potion-banner").style.display = "none";
+  socket.emit("potion-pass");
+  renderHand(myHand, gameState?.currentTurn === myId, false, handleCardPlay);
+});
+
+document.getElementById("btn-restart").addEventListener("click", () => {
+  window._boardInited = false;
+  showScreen("lobby-screen");
+});
+
+document.getElementById("cell-desc-close").addEventListener("click", () => {
+  document.getElementById("cell-desc-modal").style.display = "none";
+});
+
+document.getElementById("ingredient-warning-close")?.addEventListener("click", () => {
+  document.getElementById("ingredient-warning-modal").style.display = "none";
 });
 
 // ── 소켓 이벤트 ──
@@ -99,13 +107,18 @@ socket.on("room-updated", (state) => {
   list.innerHTML = "";
   state.players.forEach(p => {
     const li = document.createElement("li");
-    li.innerHTML = `<span class="player-dot" style="background:${p.color}"></span> ${p.name}`;
+    li.innerHTML = `<span class="player-dot" style="background:${p.color}"></span> ${p.name}${p.isBot ? " 🤖" : ""}`;
     list.appendChild(li);
   });
+  if (isHost) {
+    document.getElementById("btn-start").textContent =
+      state.players.length === 1 ? "혼자 연습하기" : "실험 시작!";
+  }
 });
 
 socket.on("game-started", (state) => {
   gameState = state;
+  window._boardInited = false;
   showScreen("game-screen");
   addLog("✦ 연금술 실험 시작!");
   renderGameState();
@@ -115,61 +128,63 @@ socket.on("game-updated", (state) => {
   gameState = state;
   renderGameState();
 
-  // 연금술 타겟 선택 UI
+  // 연금술 타겟 선택
   if (state.alchemySelectPlayer === myId) {
     showTargetSelect("alchemy");
   }
-  // 시간 역행 타겟 선택 UI
+  // 시간 역행 타겟 선택
   if (state.timeReversePlayer === myId) {
     showTargetSelect("time-reverse");
   }
   // 연금술 촉진 모드
-  const alchBanner = document.getElementById("alch-boost-banner");
   if (state.alchBoostPlayer === myId) {
     alchBoostMode = true;
-    alchBanner.style.display = "block";
+    document.getElementById("alch-boost-banner").style.display = "block";
+    renderHand(myHand, true, true, handleCardPlay);
   } else {
     alchBoostMode = false;
-    alchBanner.style.display = "none";
+    document.getElementById("alch-boost-banner").style.display = "none";
+  }
+  // 수정구슬 모드
+  if (state.potionChancePlayer === myId && !potionMode) {
+    potionMode = true;
+    document.getElementById("potion-banner").style.display = "block";
+    renderHand(myHand, true, true, handleCardPlay);
+  } else if (state.potionChancePlayer !== myId) {
+    potionMode = false;
+    document.getElementById("potion-banner").style.display = "none";
   }
 });
 
 socket.on("hand-updated", ({ hand }) => {
   myHand = hand;
   const isMyTurn = gameState && gameState.currentTurn === myId;
-  renderHand(myHand, (isMyTurn && !potionMode && !alchBoostMode) || alchBoostMode, potionMode || alchBoostMode, handleCardPlay);
+  const canPlay = (isMyTurn && !potionMode && !alchBoostMode) || potionMode || alchBoostMode;
+  renderHand(myHand, canPlay, potionMode || alchBoostMode, handleCardPlay);
 });
 
 socket.on("cell-events", ({ events }) => {
   events.forEach(e => { if (e.message) addLog(e.message, true); });
 });
 
-socket.on("potion-chance", () => {
-  potionMode = true;
-  document.getElementById("potion-banner").style.display = "block";
-  addLog("🔮 수정구슬! 카드 1장을 골라 버릴 수 있습니다.", true);
-  renderHand(myHand, true, true, handleCardPlay);
+socket.on("ingredient-warning", ({ message }) => {
+  showIngredientWarning(message);
 });
 
-socket.on("alch-boost-chance", () => {
-  alchBoostMode = true;
-  document.getElementById("alch-boost-banner").style.display = "block";
-  addLog("✨ 연금술 촉진! 버릴 카드를 선택하세요.", true);
-  renderHand(myHand, true, true, handleCardPlay);
-});
-
-socket.on("game-over", ({ winnerName }) => {
-  document.getElementById("result-winner").textContent = `🏆 ${winnerName} 승리!`;
+socket.on("game-over", ({ winnerName, winnerId }) => {
+  const isMe = winnerId === myId;
+  document.getElementById("result-title").textContent = isMe ? "🏆 물약 완성!" : "실험 실패...";
+  document.getElementById("result-winner").textContent = `${winnerName} 승리!`;
   showScreen("result-screen");
+  addLog(`✦ ${winnerName} 승리!`, true);
 });
 
 socket.on("error", ({ message }) => {
   addLog("⚠️ " + message);
-  // 재료 경고는 팝업으로 표시
   if (message.includes("재료")) showIngredientWarning(message);
 });
 
-// ── 플레이어 타겟 선택 UI ──
+// ── 타겟 선택 UI ──
 function showTargetSelect(type) {
   const modal = document.getElementById("target-select-modal");
   const title = document.getElementById("target-select-title");
@@ -185,11 +200,12 @@ function showTargetSelect(type) {
     .forEach(p => {
       const btn = document.createElement("button");
       btn.className = "target-btn";
-      btn.innerHTML = `<span class="player-dot" style="background:${p.color}"></span> ${p.name} (${p.handCount}장)`;
+      btn.innerHTML = `<span class="player-dot" style="background:${p.color}"></span>
+        ${p.name}${p.isBot ? " 🤖" : ""} (패 ${p.handCount}장)`;
       btn.onclick = () => {
-        if (type === "alchemy") socket.emit("alchemy-target", { targetId: p.id });
-        else socket.emit("time-reverse-target", { targetId: p.id });
         modal.style.display = "none";
+        if (type === "alchemy") socket.emit("alchemy-target", { targetId:p.id });
+        else socket.emit("time-reverse-target", { targetId:p.id });
       };
       list.appendChild(btn);
     });
@@ -197,12 +213,10 @@ function showTargetSelect(type) {
   modal.style.display = "flex";
 }
 
-// 재료 경고 팝업
 function showIngredientWarning(msg) {
   const modal = document.getElementById("ingredient-warning-modal");
   document.getElementById("ingredient-warning-text").textContent = msg;
   modal.style.display = "flex";
-  setTimeout(() => { modal.style.display = "none"; }, 3000);
 }
 
 // ── 렌더링 ──
@@ -220,16 +234,15 @@ function renderGameState() {
     renderChanceCards(me.chanceCards || []);
     renderIngredients(me.ingredients || []);
   }
-
-  if (myHand.length > 0) {
-    renderHand(myHand, isMyTurn && !potionMode && !alchBoostMode, potionMode || alchBoostMode, handleCardPlay);
-  }
 }
 
 function renderChanceCards(cards) {
   const inv = document.getElementById("inventory");
   inv.innerHTML = "";
-  if (cards.length === 0) return;
+  if (cards.length === 0) {
+    inv.innerHTML = "<div class='chance-empty'>찬스 카드 없음</div>";
+    return;
+  }
   const label = document.createElement("div");
   label.className = "chance-label";
   label.textContent = "✦ 찬스 카드";
@@ -238,23 +251,26 @@ function renderChanceCards(cards) {
     const btn = document.createElement("button");
     btn.className = "inv-btn";
     btn.title = `${card.name}: ${card.desc}`;
-    btn.innerHTML = `${card.icon}<span class="inv-name">${card.name}</span>`;
-    btn.onclick = () => socket.emit("use-chance-card", { cardId: card.id });
+    btn.innerHTML = `<span>${card.icon}</span><span class="inv-name">${card.name}</span>`;
+    btn.onclick = () => {
+      socket.emit("use-chance-card", { cardId:card.id });
+    };
     inv.appendChild(btn);
   });
 }
 
 function renderIngredients(ingredients) {
   const box = document.getElementById("ingredient-box");
+  if (!box) return;
   const all = [
     { id:"fire",  icon:"🔥", name:"불꽃" },
     { id:"water", icon:"💧", name:"물"   },
     { id:"earth", icon:"🌿", name:"대지" },
     { id:"wind",  icon:"🌪️", name:"바람" },
   ];
-  box.innerHTML = "<div class='ing-label'>✦ 재료</div>" +
+  box.innerHTML = `<div class='ing-label'>✦ 재료 (${ingredients.length}/4)</div>` +
     all.map(ing => `
-      <div class="ing-item ${ingredients.includes(ing.id) ? 'ing-got' : 'ing-empty'}">
+      <div class="ing-item ${ingredients.includes(ing.id) ? "ing-got" : "ing-empty"}">
         <span>${ing.icon}</span>
         <span class="ing-name">${ing.name}</span>
       </div>
@@ -266,7 +282,7 @@ function handleCardPlay(cardIndex, isSpecialMode) {
     socket.emit("alch-boost-discard", { cardIndex });
     alchBoostMode = false;
     document.getElementById("alch-boost-banner").style.display = "none";
-  } else if (isSpecialMode) {
+  } else if (isSpecialMode || potionMode) {
     socket.emit("potion-discard", { cardIndex });
     potionMode = false;
     document.getElementById("potion-banner").style.display = "none";
