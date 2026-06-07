@@ -177,15 +177,22 @@ class GameRoom {
     if (player.reverseNext) { move = -move; player.reverseNext = false; }
 
     player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
-    const cell = this.board[player.pos];
+    let cell = this.board[player.pos]; // let으로 변경 필수
 
-    // 1. 여기서만 magicBoxEvent를 선언합니다.
+    // 1. 마법 상자 획득
     const magicBoxEvent = this._eatMagicBox(player, cell);
     
     // 2. 효과 적용
-    const events = applyCellEffect(cell, player, this.players, this.deck);
+    let events = applyCellEffect(cell, player, this.players, this.deck); // let으로 변경 필수
 
-    // 3. 상자 이벤트가 있으면 합침
+    // 3. ✨ 웜홀 연계 로직: 웜홀을 타서 위치가 바뀌었다면 한 번 더 효과 적용!
+    if (events.find(e => e.type === "wormhole")) {
+      cell = this.board[player.pos]; // 웜홀로 날아간 새 위치
+      const secondaryEvents = applyCellEffect(cell, player, this.players, this.deck);
+      events = [...events, ...secondaryEvents]; // 기존 로그에 새 효과를 이어붙임
+    }
+
+    // 4. 상자 이벤트가 있으면 제일 앞에 추가
     if (magicBoxEvent) {
       events.unshift(magicBoxEvent);
     }
@@ -264,13 +271,21 @@ class GameRoom {
     switch (cardId) {
       case "thunder_boost": {
         player.pos = (player.pos + 3) % TOTAL_CELLS;
-        const cell = this.board[player.pos];
+        let cell = this.board[player.pos];
         const magicBoxEvent = this._eatMagicBox(player, cell);
-        const events = applyCellEffect(cell, player, this.players, this.deck);
+        let events = applyCellEffect(cell, player, this.players, this.deck);
+
+        if (events.find(e => e.type === "wormhole")) {
+          cell = this.board[player.pos];
+          const secondaryEvents = applyCellEffect(cell, player, this.players, this.deck);
+          events = [...events, ...secondaryEvents];
+        }
+
         if (magicBoxEvent) events.unshift(magicBoxEvent);
 
         if (this._checkWin(player)) return { success:true, message:"⚡ 3칸 이동!", winner:player, events };
         return { success:true, message:"⚡ 번개 가속! 3칸 추가 이동!", events };
+        // 👆 여기까지 교체 👆
       }
         
       case "magic_shield":
@@ -348,10 +363,18 @@ class GameRoom {
     player.pos = targetCell;
     this.spacetimeLeapPlayer = null;
 
-    const cell = this.board[player.pos];
+    let cell = this.board[player.pos];
     const magicBoxEvent = this._eatMagicBox(player, cell);
-    const events = applyCellEffect(cell, player, this.players, this.deck);
+    let events = applyCellEffect(cell, player, this.players, this.deck);
+
+    if (events.find(e => e.type === "wormhole")) {
+      cell = this.board[player.pos];
+      const secondaryEvents = applyCellEffect(cell, player, this.players, this.deck);
+      events = [...events, ...secondaryEvents];
+    }
+
     if (magicBoxEvent) events.unshift(magicBoxEvent);
+    // 👆 여기까지 교체 👆
 
     if (this._checkWin(player)) return { success:true, events, winner:player };
     this._nextTurn();
