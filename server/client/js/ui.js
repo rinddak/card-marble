@@ -3,39 +3,61 @@ function showScreen(id) {
   document.getElementById(id).classList.add("active");
 }
 
-function addLog(msg, highlight = false) {
+function addLog(msg, highlight = false, isWarn = false) {
   const box = document.getElementById("log-box");
+  if (!box) return;
   const el = document.createElement("div");
-  el.className = "log-entry" + (highlight ? " highlight" : "");
+  el.className = "log-entry" +
+    (highlight ? " highlight" : "") +
+    (isWarn ? " log-warn" : "");
   el.textContent = msg;
   box.appendChild(el);
   box.scrollTop = box.scrollHeight;
+
+  // 로그 최대 50개 유지
+  while (box.children.length > 50) box.removeChild(box.firstChild);
 }
 
 function updatePlayerInfoList(players, currentTurnId, myId) {
   const list = document.getElementById("player-info-list");
+  if (!list) return;
   list.innerHTML = "";
   players.forEach(p => {
+    const isActive = p.id === currentTurnId;
+    const isMe = p.id === myId;
     const row = document.createElement("div");
-    row.className = "player-info-row" + (p.id === currentTurnId ? " active-player" : "");
-    const dot = `<span class="player-dot" style="background:${p.color}"></span>`;
-    const you = p.id === myId ? " (나)" : "";
-    const reverse = p.reverseNext ? " 🔄" : "";
-    row.innerHTML = `${dot} ${p.name}${you}${reverse} <span class="hand-count">${p.handCount}장</span>`;
+    row.className = "player-info-row" + (isActive ? " active-player" : "");
+
+    const shield = p.protected ? '<span class="p-shield">🛡️</span>' : "";
+    const botTag = p.isBot ? " 🤖" : "";
+    const meTag = isMe ? " (나)" : "";
+
+    row.innerHTML = `
+      <span class="player-dot" style="background:${p.color}"></span>
+      <span class="p-name">${p.name}${botTag}${meTag}</span>
+      ${shield}
+      <span class="p-cards">${p.handCount}장</span>
+    `;
     list.appendChild(row);
   });
 }
 
-function updateTurnBanner(currentTurnId, players, myId) {
+function updateTurnBanner(players, currentTurnId, myId) {
   const banner = document.getElementById("turn-banner");
+  if (!banner) return;
   const current = players.find(p => p.id === currentTurnId);
   if (!current) return;
+
   if (currentTurnId === myId) {
     banner.textContent = "⚡ 내 턴입니다!";
-    banner.style.background = "#00b894";
+    banner.style.background = "linear-gradient(135deg, rgba(42,80,32,0.9), rgba(20,50,14,0.9))";
+    banner.style.borderColor = "#70B060";
+    banner.style.color = "#C8F0C0";
   } else {
-    banner.textContent = `${current.name}의 턴`;
-    banner.style.background = "#6c5ce7";
+    banner.textContent = `${current.name}${current.isBot ? " 🤖" : ""}의 턴`;
+    banner.style.background = "linear-gradient(135deg, rgba(92,58,30,0.9), rgba(45,20,8,0.9))";
+    banner.style.borderColor = "#C8A96E";
+    banner.style.color = "#FFE4B5";
   }
 }
 
