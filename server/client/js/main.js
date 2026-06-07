@@ -166,9 +166,10 @@ socket.on("game-updated", (state) => {
   // 덱 카운트 업데이트
   const deckEl = document.getElementById("deck-count");
   if (deckEl) deckEl.textContent = state.deckCount;
-});
 
-// 가마솥
+  // 👇👇 가마솥 등 새 로직들을 이벤트 리스너 안으로 넣었습니다 👇👇
+
+  // 가마솥
   if (state.cauldronPlayer === myId) {
     cauldronMode = true;
     showMultiSelectBanner("cauldron", "🫕 가마솥! 버릴 카드를 최대 2장 선택하세요.", 2);
@@ -185,6 +186,7 @@ socket.on("game-updated", (state) => {
     spacetimeMode = true;
     showSpacetimeModal();
   }
+}); // 👈👈 최종적으로 여기서 이벤트 리스너를 닫습니다!
 
 socket.on("hand-updated", ({ hand }) => {
   myHand = hand;
