@@ -168,6 +168,24 @@ socket.on("game-updated", (state) => {
   if (deckEl) deckEl.textContent = state.deckCount;
 });
 
+// 가마솥
+  if (state.cauldronPlayer === myId) {
+    cauldronMode = true;
+    showMultiSelectBanner("cauldron", "🫕 가마솥! 버릴 카드를 최대 2장 선택하세요.", 2);
+  } else { cauldronMode = false; }
+
+  // 불순물 정제
+  if (state.impurityPlayer === myId) {
+    impurityMode = true;
+    showMultiSelectBanner("impurity", "⚗️ 불순물 정제! 버릴 카드를 최대 2장 선택하세요.", 2);
+  } else { impurityMode = false; }
+
+  // 시공간 도약
+  if (state.spacetimeLeapPlayer === myId) {
+    spacetimeMode = true;
+    showSpacetimeModal();
+  }
+
 socket.on("hand-updated", ({ hand }) => {
   myHand = hand;
   const isMyTurn = gameState && gameState.currentTurn === myId;
@@ -291,22 +309,113 @@ function renderChanceCards(cards) {
     inv.innerHTML = "<div class='chance-empty'>보유한 찬스 카드 없음</div>";
     return;
   }
-  cards.forEach((card, idx) => {
+  cards.forEach(card => {
     const btn = document.createElement("button");
-    btn.className = "inv-btn";
+    const isLegendary = card.rarity === "legendary";
+    btn.className = "inv-btn" + (isLegendary ? " legendary" : "");
     btn.title = `${card.name}: ${card.desc}`;
-    btn.innerHTML = `
-      <span class="inv-icon">${card.icon}</span>
-      <span class="inv-name">${card.name}</span>
-    `;
-    btn.onclick = () => {
-      socket.emit("use-chance-card", { cardId:card.id });
-    };
+    btn.innerHTML = `<span class="inv-icon">${card.icon}</span><span class="inv-name">${card.name}</span>`;
+    btn.onclick = () => socket.emit("use-chance-card", { cardId:card.id });
     inv.appendChild(btn);
   });
 }
 
+function showMultiSelectBanner(type, msg, maxCount) {
+  const banner = document.getElementById("multi-select-banner");
+  if (!banner) return;
+  document.getElementById("multi-select-msg").textContent = msg;
+  banner.style.display = "block";
+
+  const confirmBtn = document.getElementById("btn-multi-confirm");
+  const selected = type === "cauldron" ? cauldronSelected : impuritySelected;
+  confirmBtn.onclick = () => {
+    banner.style.display = "none";
+    if (type === "cauldron") {
+      socket.emit("cauldron-discard", { cardIndices: cauldronSelected });
+      cauldronMode = false; cauldronSelected = [];
+    } else {
+      socket.emit("impurity-discard", { cardIndices: impuritySelected });
+      impurityMode = false; impuritySelected = [];
+    }
+    // 선택 해제
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
+  };
+}
+
+function showSpacetimeModal() {
+  // 카드 선택 후 칸 선택 UI
+  const modal = document.getElementById("spacetime-modal");
+  if (!modal) return;
+
+  // 먼저 카드 선택 안내
+  document.getElementById("spacetime-step").textContent = "1단계: 내보낼 카드를 손패에서 선택하세요.";
+  modal.style.display = "flex";
+
+  // 카드 선택 → 칸 선택으로 이동
+  document.getElementById("spacetime-card-done").onclick = () => {
+    if (spacetimeCardIndex < 0) return alert("카드를 먼저 선택하세요!");
+    document.getElementById("spacetime-step1").style.display = "none";
+    document.getElementById("spacetime-step2").style.display = "block";
+    renderCellSelector();
+  };
+}
+
+function renderCellSelector() {
+  const grid = document.getElementById("spacetime-cell-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  for (let i = 0; i < 24; i++) {
+    const btn = document.createElement("button");
+    btn.className = "cell-select-btn";
+    btn.textContent = i;
+    btn.onclick = () => {
+      socket.emit("spacetime-leap", { cardIndex:spacetimeCardIndex, targetCell:i });
+      document.getElementById("spacetime-modal").style.display = "none";
+      spacetimeMode = false; spacetimeCardIndex = -1;
+    };
+    grid.appendChild(btn);
+  }
+}
+
+// 가마솥 - 다중 선택 모드
+let cauldronMode = false;
+let cauldronSelected = [];
+
+// 불순물 정제 - 다중 선택 모드
+let impurityMode = false;
+let impuritySelected = [];
+
+// 시공간 도약 모드
+let spacetimeMode = false;
+let spacetimeCardIndex = -1;
+
 function handleCardPlay(cardIndex, isSpecialMode) {
+  if (cauldronMode) {
+    // 가마솥: 다중 선택
+    const idx = cauldronSelected.indexOf(cardIndex);
+    if (idx >= 0) cauldronSelected.splice(idx, 1);
+    else if (cauldronSelected.length < 2) cauldronSelected.push(cardIndex);
+    // 선택 표시
+    document.querySelectorAll(".card").forEach((el, i) => {
+      el.classList.toggle("selected", cauldronSelected.includes(i));
+    });
+    return;
+  }
+  if (impurityMode) {
+    const idx = impuritySelected.indexOf(cardIndex);
+    if (idx >= 0) impuritySelected.splice(idx, 1);
+    else if (impuritySelected.length < 2) impuritySelected.push(cardIndex);
+    document.querySelectorAll(".card").forEach((el, i) => {
+      el.classList.toggle("selected", impuritySelected.includes(i));
+    });
+    return;
+  }
+  if (spacetimeMode) {
+    spacetimeCardIndex = cardIndex;
+    document.getElementById("spacetime-step").textContent =
+      `카드 ${cardIndex + 1}번 선택됨. 이동할 칸을 선택하세요.`;
+    return;
+  }
   if (alchBoostMode) {
     socket.emit("alch-boost-discard", { cardIndex });
     alchBoostMode = false;
