@@ -230,8 +230,51 @@ button:disabled { opacity: .4; cursor: default; transform: none; }
     radial-gradient(ellipse at 50% 40%, rgba(60,30,10,0.8) 0%, var(--wood-dark) 70%);
   height: 100vh;
   overflow: hidden;
-  padding: 10px 12px 0 12px; /* ← 여백 추가 */
+  padding: 10px 14px 0 14px;
   gap: 8px;
+}
+
+#game-root {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#left-panel, #right-panel {
+  width: 195px;
+  flex-shrink: 0;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#board-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#hand-section {
+  display: flex;
+  align-items: stretch;
+  background: rgba(10,5,2,0.95);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  flex-shrink: 0;
+  min-height: 155px;
+  max-height: 165px;
+  margin-bottom: 10px;
 }
 
 #game-root {
@@ -240,23 +283,6 @@ button:disabled { opacity: .4; cursor: default; transform: none; }
   gap: 10px; /* ← 패널 사이 간격 */
   overflow: hidden;
   min-height: 0;
-}
-
-/* ════════════════════════════════════
-   왼쪽 / 오른쪽 패널
-════════════════════════════════════ */
-#left-panel, #right-panel {
-  width: 200px;
-  flex-shrink: 0; /* ← 절대 줄어들지 않음 */
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-#right-panel {
-  border-color: var(--panel-border);
 }
 
 .panel-header {
@@ -482,57 +508,37 @@ button:disabled { opacity: .4; cursor: default; transform: none; }
 
 /* ── 칸 기본 ── */
 .cell {
-  width: 70px;
-  height: 92px;
+  width: 72px;
+  height: 94px;
   background: linear-gradient(145deg, #D4B896, #C4A882);
   border: 1.5px solid #8B6340;
   border-radius: 6px;
   margin: 2px;
   position: relative;
   cursor: default;
-  transition: transform .1s, box-shadow .1s;
-  overflow: hidden;
+  transition: transform .12s, box-shadow .12s;
+  overflow: visible;
 }
-.cell:hover {
-  transform: scale(1.06);
-  z-index: 10;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-}
-.cell.side { width: 92px; height: 70px; }
-.cell.corner {
-  width: 100px;
-  height: 100px;
-  border-radius: 10px;
-  border-width: 2.5px;
-}
+.cell:hover { transform: scale(1.07); z-index: 10; box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+.cell.side { width: 94px; height: 72px; }
+.cell.corner { width: 104px; height: 104px; border-radius: 10px; border-width: 2.5px; }
 
-.cell-icon { font-size: 1.6rem; line-height: 1; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.4)); }
-.corner .cell-icon { font-size: 2.2rem; }
-.side .cell-icon { font-size: 1.4rem; }
+.cell-icon { font-size: 1.7rem; line-height: 1; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.35)); }
+.corner .cell-icon { font-size: 2.3rem; }
+.side .cell-icon { font-size: 1.5rem; }
 
 .cell-label {
-  font-size: 8px;
+  font-size: 8.5px;
   font-family: 'Cinzel', serif;
   color: #3A1E08;
   text-align: center;
   line-height: 1.2;
-  font-weight: 800; /* ← 굵게 */
+  font-weight: 800;
   word-break: keep-all;
-  letter-spacing: -.01em;
 }
-.corner .cell-label {
-  font-size: 10px;
-  color: #FFE4B5;
-  font-weight: 700;
-}
+.corner .cell-label { font-size: 10.5px; color: #FFE4B5; font-weight: 700; }
+.cell-num { position: absolute; top: 2px; left: 3px; font-size: 7px; color: rgba(74,42,16,0.4); }
 
-.cell-num {
-  position: absolute;
-  top: 2px;
-  left: 3px;
-  font-size: 7px;
-  color: rgba(74,42,16,0.4);
-}
 /* ── 칸 타입별 색상 ── */
 .cell-start    { background: linear-gradient(145deg, #5C3A1E, #3D2008); border-color: var(--gold); }
 .cell-normal   { background: linear-gradient(145deg, #D4B896, #C4A882); border-color: #8B6340; }
@@ -986,4 +992,264 @@ button:disabled { opacity: .4; cursor: default; transform: none; }
   .lobby-box { width: 95%; padding: 1.5rem 1rem; }
   #hand-actions { width: 140px; padding: 8px; }
   .btn-action { font-size: .88rem; padding: 9px 10px; }
+}
+
+/* ── 마법 상자 빛기둥 ── */
+@keyframes magicPulse {
+  0%   { opacity: .3; transform: scaleX(1); }
+  50%  { opacity: .9; transform: scaleX(1.3); }
+  100% { opacity: .3; transform: scaleX(1); }
+}
+@keyframes magicRise {
+  0%   { opacity: 0; transform: translateY(0) scaleY(.5); }
+  30%  { opacity: .8; }
+  100% { opacity: 0; transform: translateY(-80px) scaleY(1.5); }
+}
+
+.magic-box-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+
+/* 빛기둥 메인 */
+.magic-box-glow::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 100px;
+  background: linear-gradient(to top,
+    rgba(255,215,0,0.8),
+    rgba(80,220,80,0.6),
+    rgba(255,215,0,0.2),
+    transparent);
+  border-radius: 4px;
+  animation: magicRise 1.8s ease-out infinite;
+  filter: blur(3px);
+}
+
+/* 빛기둥 보조 (더 얇고 빠름) */
+.magic-box-glow::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 80px;
+  background: linear-gradient(to top,
+    rgba(255,255,255,0.9),
+    rgba(255,215,0,0.5),
+    transparent);
+  border-radius: 2px;
+  animation: magicRise 1.4s ease-out .4s infinite;
+  filter: blur(1px);
+}
+
+.has-magic-box {
+  box-shadow:
+    0 0 12px rgba(255,215,0,0.5),
+    0 0 25px rgba(80,220,80,0.3),
+    inset 0 0 8px rgba(255,215,0,0.15);
+  animation: magicPulse 2s ease-in-out infinite;
+  border-color: #C8A830 !important;
+}
+
+/* ── 새 칸 타입 색상 ── */
+.cell-herb     { background: linear-gradient(145deg, #98C878, #78A858); border-color: #2A7A2A; }
+.cell-cauldron { background: linear-gradient(145deg, #A888C8, #8868A8); border-color: #4A2A7A; }
+.cell-wormhole { background: linear-gradient(145deg, #88A8C8, #6888A8); border-color: #2A4A7A; }
+.cell-magic-box {
+  background: linear-gradient(145deg, #C8B840, #A89820);
+  border-color: #C8A830;
+  box-shadow: 0 0 10px rgba(255,215,0,0.4);
+}
+
+/* ── 전설 카드 스타일 ── */
+.inv-btn.legendary {
+  border-color: #C8A830;
+  background: linear-gradient(145deg, #3D3008, #2C2005);
+  position: relative;
+  overflow: hidden;
+}
+.inv-btn.legendary::before {
+  content: '전설';
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: .6rem;
+  color: #C8A830;
+  font-family: 'Cinzel', serif;
+  opacity: .8;
+}
+.inv-btn.legendary:hover {
+  box-shadow: 0 0 14px rgba(200,168,48,0.4);
+}
+
+/* ── 양피지 카드 디자인 ── */
+.card {
+  width: 70px;
+  height: 98px;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,245,210,0.6) 0%, transparent 60%),
+    linear-gradient(160deg, #EFE0B0, #E0C880, #D4B860, #C8A840);
+  border: 1.5px solid #8B6820;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Crimson Text', serif;
+  cursor: pointer;
+  transition: transform .2s cubic-bezier(.34,1.4,.64,1), box-shadow .2s;
+  position: relative;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow:
+    2px 4px 12px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -3px 8px rgba(100,70,10,0.3);
+  overflow: hidden;
+}
+
+/* 양피지 질감 오버레이 */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(160,120,40,0.04) 2px,
+      rgba(160,120,40,0.04) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(160,120,40,0.03) 3px,
+      rgba(160,120,40,0.03) 6px
+    );
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+/* 테두리 안쪽 음영 (그을린 느낌) */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 12px rgba(100,60,10,0.35),
+    inset 0 0 4px rgba(80,50,5,0.2);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+/* 호버: 떠오르며 그림자 깊어짐 */
+.card:hover {
+  transform: translateY(-14px) scale(1.03);
+  box-shadow:
+    0 22px 40px rgba(0,0,0,0.7),
+    0 8px 20px rgba(100,70,10,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -3px 8px rgba(100,70,10,0.4);
+  border-color: #C8A830;
+}
+
+.card.selected {
+  transform: translateY(-18px) scale(1.04);
+  box-shadow:
+    0 0 0 2.5px #C8A830,
+    0 22px 40px rgba(0,0,0,0.7),
+    0 0 20px rgba(200,168,48,0.3);
+  border-color: #E0C840;
+}
+
+/* 좌상단 트럼프 정보 (보조) */
+.card-corner {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  gap: 1px;
+  z-index: 2;
+}
+.card-rank-small {
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #5A3A0A;
+}
+.card-suit-small {
+  font-size: .6rem;
+  line-height: 1;
+  color: #7A5020;
+}
+.card.red .card-rank-small { color: #8B1A1A; }
+.card.red .card-suit-small { color: #AA3030; }
+
+/* 중앙 이동 칸수 (메인) */
+.card-move-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  position: relative;
+  z-index: 2;
+  margin-top: 8px;
+}
+
+.card-move-symbol {
+  font-size: .9rem;
+  color: #7A5820;
+  opacity: .9;
+}
+
+.card-move-number {
+  font-size: 2.6rem;
+  font-weight: 700;
+  font-family: 'Cinzel', serif;
+  line-height: 1;
+  color: #3A2008;
+  text-shadow:
+    1px 1px 0 rgba(200,160,60,0.5),
+    0 0 1px rgba(0,0,0,0.3);
+  letter-spacing: -.02em;
+}
+
+/* 금박 느낌 (이동수 1~3: 일반, 4~5: 실버, 6: 골드) */
+.card[data-move="6"] .card-move-number {
+  color: #8B6820;
+  text-shadow: 1px 1px 0 rgba(255,220,80,0.6), 0 0 8px rgba(200,160,40,0.3);
+}
+.card[data-move="5"] .card-move-number,
+.card[data-move="4"] .card-move-number {
+  color: #5A4A20;
+  text-shadow: 1px 1px 0 rgba(180,160,100,0.5);
+}
+
+.card.disabled {
+  opacity: .38;
+  cursor: default;
+  transform: none !important;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.4) !important;
+  filter: saturate(.5);
+}
+
+.card.highlight-mode {
+  border-color: #4A8C4A;
+  box-shadow: 0 0 0 1.5px #4A8C4A, 2px 4px 12px rgba(0,0,0,0.5) !important;
 }
