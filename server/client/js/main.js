@@ -381,12 +381,32 @@ let spacetimeCardIndex = -1;
 
 // 2. handleCardPlay 함수 교체 (가마솥/불순물 관련 불필요한 코드 삭제)
 function handleCardPlay(cardIndex, isSpecialMode) {
+  // 1. 가마솥 / 불순물 정제 모드일 때: 다중 선택 로직
+  if (cauldronMode || impurityMode) {
+    const targetArray = cauldronMode ? cauldronSelected : impuritySelected;
+    const idx = targetArray.indexOf(cardIndex);
+    
+    if (idx >= 0) {
+      // 이미 선택된 경우: 선택 해제
+      targetArray.splice(idx, 1);
+      document.querySelectorAll("#hand-cards .card")[cardIndex].classList.remove("selected");
+    } else if (targetArray.length < 2) {
+      // 선택되지 않은 경우: 2장까지만 선택
+      targetArray.push(cardIndex);
+      document.querySelectorAll("#hand-cards .card")[cardIndex].classList.add("selected");
+    }
+    return; // 여기서 멈춤 (카드 내기 버튼을 누를 때까지 대기)
+  }
+
+  // 2. 시공간 도약 모드일 때
   if (spacetimeMode) {
     spacetimeCardIndex = cardIndex;
     document.getElementById("spacetime-step").textContent =
       `카드 ${cardIndex + 1}번 선택됨. 이동할 칸을 선택하세요.`;
     return;
   }
+
+  // 3. 나머지 일반 모드 (가마솥/불순물이 아닐 때)
   if (alchBoostMode) {
     socket.emit("alch-boost-discard", { cardIndex });
     alchBoostMode = false;
