@@ -452,19 +452,16 @@ document.getElementById("hand-cards").addEventListener("click", (e) => {
 }, true); // true = 캡처링 단계에서 우선 가로채기
 
 // 2. [카드 내기] 버튼 가로채기
-document.getElementById("btn-play-card").addEventListener("click", (e) => {
+// 기존의 btn-play-card 관련 모든 addEventListener를 지우고 아래 코드를 넣어주세요
+document.getElementById("btn-play-card").addEventListener("click", () => {
+  // 1. 가마솥 / 불순물 모드일 때
   if (cauldronMode || impurityMode) {
-    e.stopPropagation(); // 기존 1장 내기 로직 막기
-    
     if (multiSelectedIndices.length === 0) {
       return alert("버릴 카드를 1장 이상 선택해주세요!");
     }
 
-    if (cauldronMode) {
-      socket.emit("cauldron-discard", { cardIndices: multiSelectedIndices });
-    } else {
-      socket.emit("impurity-discard", { cardIndices: multiSelectedIndices });
-    }
+    const eventName = cauldronMode ? "cauldron-discard" : "impurity-discard";
+    socket.emit(eventName, { cardIndices: multiSelectedIndices });
 
     // UI 초기화
     cauldronMode = false;
@@ -472,5 +469,23 @@ document.getElementById("btn-play-card").addEventListener("click", (e) => {
     multiSelectedIndices = [];
     document.getElementById("action-status").style.display = "none";
     document.getElementById("btn-play-card").innerHTML = `<span class="btn-icon">⚗️</span> 카드 내기`;
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
+    return; // 여기서 종료
   }
-}, true);
+
+  // 2. 일반 카드 내기 모드 (기존 hand.js 시스템 사용)
+  // hand.js에서 선택된 카드 정보를 가져와야 합니다.
+  const selectedCard = document.querySelector("#hand-cards .card.selected");
+  if (!selectedCard) {
+    return alert("먼저 카드를 클릭해서 선택해주세요!");
+  }
+  
+  // 선택된 카드의 인덱스를 찾아야 함
+  const allCards = Array.from(document.querySelectorAll("#hand-cards .card"));
+  const cardIndex = allCards.indexOf(selectedCard);
+  
+  if (cardIndex >= 0) {
+    handleCardPlay(cardIndex, false);
+    selectedCard.classList.remove("selected"); // 선택 해제
+  }
+});
