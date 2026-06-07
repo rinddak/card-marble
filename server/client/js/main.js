@@ -142,8 +142,13 @@ socket.on("game-updated", (state) => {
 
   // 버튼 강제 활성화 (모든 모드에서 버튼은 항상 누를 수 있어야 함)
   const playBtn = document.getElementById("btn-play-card");
-  if (playBtn) playBtn.disabled = false;
-
+  if (playBtn) {
+    // 가마솥이나 불순물 모드면 일단 무조건 버튼을 켭니다.
+    if (state.cauldronPlayer === myId || state.impurityPlayer === myId) {
+      playBtn.disabled = false; 
+    }
+  }
+  
   // 연금술 타겟 선택
   if (state.alchemySelectPlayer === myId) showTargetSelect("alchemy");
   // 시간 역행 타겟 선택
@@ -287,7 +292,7 @@ function renderGameState() {
 
   const isMyTurn = gameState.currentTurn === myId;
   const drawBtn = document.getElementById("btn-draw");
-  if (drawBtn) drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode;
+  if (drawBtn) drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode || cauldronMode;
 
   const me = gameState.players.find(p => p.id === myId);
   if (me) {
