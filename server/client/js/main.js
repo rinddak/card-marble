@@ -140,6 +140,10 @@ socket.on("game-updated", (state) => {
   gameState = state;
   renderGameState();
 
+  // 버튼 강제 활성화 (모든 모드에서 버튼은 항상 누를 수 있어야 함)
+  const playBtn = document.getElementById("btn-play-card");
+  if (playBtn) playBtn.disabled = false;
+
   // 연금술 타겟 선택
   if (state.alchemySelectPlayer === myId) showTargetSelect("alchemy");
   // 시간 역행 타겟 선택
