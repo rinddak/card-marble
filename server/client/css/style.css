@@ -1253,3 +1253,21 @@ button:disabled { opacity: .4; cursor: default; transform: none; }
   border-color: #4A8C4A;
   box-shadow: 0 0 0 1.5px #4A8C4A, 2px 4px 12px rgba(0,0,0,0.5) !important;
 }
+
+/* 시공간 도약 칸 선택 버튼 */
+.cell-select-btn {
+  padding: 6px 4px;
+  background: linear-gradient(145deg, #2C1A08, #1E1005);
+  border: 1px solid var(--wood-border);
+  border-radius: 6px;
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .12s;
+}
+.cell-select-btn:hover {
+  background: linear-gradient(145deg, #5C3A1E, #3D2008);
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(200,169,110,0.3);
+}
