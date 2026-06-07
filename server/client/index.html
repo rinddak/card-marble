@@ -10,21 +10,23 @@
 </head>
 <body>
 
-  <!-- 로비 -->
-  <div id="lobby-screen" class="screen active">
+<!-- ════════════════════════════════════
+     로비 화면
+════════════════════════════════════ -->
+<div id="lobby-screen" class="screen active">
+  <div class="lobby-wrap">
     <div class="lobby-box">
-      <div class="lobby-deco top"></div>
+      <div class="lobby-ornament top">⸻ ✦ ⸻</div>
       <h1>⚗️ 카드마블</h1>
       <p class="subtitle">초보 연금술사의 여정</p>
+
       <input id="player-name" type="text" placeholder="연금술사 이름 입력" maxlength="10">
 
-      <!-- 모드 선택 -->
       <div class="mode-select">
         <button id="btn-single" class="mode-btn active-mode">🧪 싱글 모드</button>
         <button id="btn-multi-mode" class="mode-btn">⚔️ 멀티 모드</button>
       </div>
 
-      <!-- 싱글 모드 옵션 -->
       <div id="single-options">
         <p class="mode-desc">봇 수를 선택하세요</p>
         <div class="bot-select">
@@ -33,157 +35,227 @@
           <button class="bot-btn" data-bot="2">봇 2명</button>
           <button class="bot-btn" data-bot="3">봇 3명</button>
         </div>
-        <button id="btn-start-single">실험 시작!</button>
+        <button id="btn-start-single" class="btn-primary">실험 시작!</button>
       </div>
 
-      <!-- 멀티 모드 옵션 -->
       <div id="multi-options" style="display:none">
         <div class="lobby-buttons">
-          <button id="btn-create">방 만들기</button>
-          <button id="btn-join">방 입장</button>
+          <button id="btn-create" class="btn-primary">방 만들기</button>
+          <button id="btn-join" class="btn-secondary">방 입장</button>
         </div>
         <div id="join-row" style="display:none">
-          <input id="room-id-input" type="text" placeholder="방 코드 입력 (숫자 5자리)" maxlength="5">
-          <button id="btn-join-confirm">입장</button>
+          <input id="room-id-input" type="text" placeholder="방 코드 (숫자 5자리)" maxlength="5">
+          <button id="btn-join-confirm" class="btn-primary">입장</button>
         </div>
       </div>
 
       <p id="lobby-error" class="error-msg"></p>
-      <div class="lobby-deco bottom"></div>
+      <div class="lobby-ornament bottom">⸻ ✦ ⸻</div>
     </div>
   </div>
+</div>
 
-  <!-- 대기실 -->
-  <div id="waiting-screen" class="screen">
-    <div class="waiting-box">
-      <h2>⚗️ 연금술사 대기실</h2>
-      <div class="room-code-display">방 코드: <span id="room-code-text">-----</span></div>
+<!-- ════════════════════════════════════
+     대기실 화면
+════════════════════════════════════ -->
+<div id="waiting-screen" class="screen">
+  <div class="lobby-wrap">
+    <div class="lobby-box">
+      <div class="lobby-ornament top">⸻ ✦ ⸻</div>
+      <h2>연금술사 대기실</h2>
+      <div class="room-code-display">
+        방 코드 <span id="room-code-text">-----</span>
+      </div>
       <ul id="player-list"></ul>
-      <button id="btn-start" style="display:none">실험 시작!</button>
-      <p id="waiting-msg" class="muted">✦ 다른 연금술사를 기다리는 중... ✦</p>
+      <button id="btn-start" class="btn-primary" style="display:none">실험 시작!</button>
+      <p class="muted">✦ 다른 연금술사를 기다리는 중... ✦</p>
+      <div class="lobby-ornament bottom">⸻ ✦ ⸻</div>
     </div>
   </div>
+</div>
 
-  <!-- 게임 화면 -->
-  <div id="game-screen" class="screen">
-    <div id="game-layout">
-      <div id="board-area">
-        <div id="board-wrap">
+<!-- ════════════════════════════════════
+     게임 화면
+════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+  <div id="game-root">
 
-          <!-- 위변: 18, 17~13, 12 -->
-          <div class="board-row top-row">
-            <div class="cell corner" id="cell-18"></div>
-            <div class="cell" id="cell-17"></div>
-            <div class="cell" id="cell-16"></div>
-            <div class="cell" id="cell-15"></div>
-            <div class="cell" id="cell-14"></div>
-            <div class="cell" id="cell-13"></div>
-            <div class="cell corner" id="cell-12"></div>
+    <!-- 왼쪽 패널 -->
+    <div id="left-panel">
+      <div class="panel-header">아이템 보관함</div>
+
+      <!-- 재료 -->
+      <div class="panel-section">
+        <div class="section-title">✦ 재료</div>
+        <div id="ingredient-box"></div>
+      </div>
+
+      <!-- 찬스 카드 -->
+      <div class="panel-section">
+        <div class="section-title">✦ 찬스 카드</div>
+        <div id="inventory"></div>
+      </div>
+
+      <!-- 플레이어 정보 -->
+      <div class="panel-section">
+        <div class="section-title">✦ 플레이어</div>
+        <div id="player-info-list"></div>
+      </div>
+    </div>
+
+    <!-- 보드판 -->
+    <div id="board-area">
+      <div id="turn-banner">대기 중...</div>
+      <div id="board-wrap">
+
+        <!-- 위변: 18, 17~13, 12 -->
+        <div class="board-row top-row">
+          <div class="cell corner" id="cell-18"></div>
+          <div class="cell" id="cell-17"></div>
+          <div class="cell" id="cell-16"></div>
+          <div class="cell" id="cell-15"></div>
+          <div class="cell" id="cell-14"></div>
+          <div class="cell" id="cell-13"></div>
+          <div class="cell corner" id="cell-12"></div>
+        </div>
+
+        <!-- 중간 -->
+        <div class="board-row mid-row">
+          <div class="board-col left-col">
+            <div class="cell side" id="cell-19"></div>
+            <div class="cell side" id="cell-20"></div>
+            <div class="cell side" id="cell-21"></div>
+            <div class="cell side" id="cell-22"></div>
+            <div class="cell side" id="cell-23"></div>
           </div>
-
-          <!-- 중간 -->
-          <div class="board-row mid-row">
-            <div class="board-col left-col">
-              <div class="cell side" id="cell-19"></div>
-              <div class="cell side" id="cell-20"></div>
-              <div class="cell side" id="cell-21"></div>
-              <div class="cell side" id="cell-22"></div>
-              <div class="cell side" id="cell-23"></div>
-            </div>
-            <div id="board-center">
-              <div id="magic-circle">
-                <div class="magic-ring ring1"></div>
-                <div class="magic-ring ring2"></div>
-                <div class="magic-ring ring3"></div>
-                <div class="magic-star">✦</div>
-                <div class="magic-title">⚗️</div>
-                <div class="magic-subtitle">카드마블</div>
+          <div id="board-center">
+            <div id="magic-circle">
+              <div class="magic-ring ring1"></div>
+              <div class="magic-ring ring2"></div>
+              <div class="magic-ring ring3"></div>
+              <div class="magic-lines"></div>
+              <div class="magic-content">
+                <div class="magic-icon">⚗️</div>
+                <div class="magic-title">카드마블</div>
+                <div class="magic-subtitle">연금술사의 여정</div>
               </div>
             </div>
-            <div class="board-col right-col">
-              <div class="cell side" id="cell-11"></div>
-              <div class="cell side" id="cell-10"></div>
-              <div class="cell side" id="cell-9"></div>
-              <div class="cell side" id="cell-8"></div>
-              <div class="cell side" id="cell-7"></div>
-            </div>
           </div>
-
-          <!-- 아래변: 0, 1~5, 6 -->
-          <div class="board-row bottom-row">
-            <div class="cell corner" id="cell-0"></div>
-            <div class="cell" id="cell-1"></div>
-            <div class="cell" id="cell-2"></div>
-            <div class="cell" id="cell-3"></div>
-            <div class="cell" id="cell-4"></div>
-            <div class="cell" id="cell-5"></div>
-            <div class="cell corner" id="cell-6"></div>
-          </div>
-      <!-- 사이드 패널 -->
-      <div id="side-panel">
-        <div id="turn-banner">대기 중...</div>
-        <div id="player-info-list"></div>
-        <div id="log-box"></div>
-        <div id="hand-area">
-          <div id="hand-label">✦ 손패</div>
-          <div id="ingredient-box"></div>
-          <div id="inventory"></div>
-          <div id="hand-cards"></div>
-          <div id="action-buttons">
-            <button id="btn-draw">카드 드로우</button>
-          </div>
-          <div id="potion-banner" style="display:none">
-            <p>🔮 수정구슬! 버릴 카드를 선택하세요.</p>
-            <button id="btn-potion-pass">패스</button>
-          </div>
-          <div id="alch-boost-banner" style="display:none">
-            <p>✨ 연금술 촉진! 버릴 카드를 선택하세요.</p>
+          <div class="board-col right-col">
+            <div class="cell side" id="cell-11"></div>
+            <div class="cell side" id="cell-10"></div>
+            <div class="cell side" id="cell-9"></div>
+            <div class="cell side" id="cell-8"></div>
+            <div class="cell side" id="cell-7"></div>
           </div>
         </div>
+
+        <!-- 아래변: 0, 1~5, 6 -->
+        <div class="board-row bottom-row">
+          <div class="cell corner" id="cell-0"></div>
+          <div class="cell" id="cell-1"></div>
+          <div class="cell" id="cell-2"></div>
+          <div class="cell" id="cell-3"></div>
+          <div class="cell" id="cell-4"></div>
+          <div class="cell" id="cell-5"></div>
+          <div class="cell corner" id="cell-6"></div>
+        </div>
+
+      </div>
+
+      <!-- 덱 정보 -->
+      <div id="deck-info">🃏 덱: <span id="deck-count">0</span>장</div>
+    </div>
+
+    <!-- 오른쪽 패널 -->
+    <div id="right-panel">
+      <div class="panel-header">연금술 실험 로그</div>
+      <div id="log-box"></div>
+    </div>
+
+  </div>
+
+  <!-- 하단: 손패 영역 -->
+  <div id="hand-section">
+    <div id="hand-wrap">
+      <div id="hand-label">✦ 손패 <span id="hand-count-label"></span></div>
+      <div id="hand-cards"></div>
+    </div>
+    <div id="hand-actions">
+      <div id="action-status"></div>
+      <div id="action-buttons">
+        <button id="btn-play-card" class="btn-action btn-play">
+          <span class="btn-icon">⚗️</span> 카드 내기
+        </button>
+        <button id="btn-draw" class="btn-action btn-draw-card">
+          <span class="btn-icon">🃏</span> 드로우
+        </button>
+      </div>
+      <div id="potion-banner" style="display:none">
+        <p>🔮 수정구슬! 버릴 카드를 선택하세요.</p>
+        <button id="btn-potion-pass" class="btn-secondary">패스</button>
+      </div>
+      <div id="alch-boost-banner" style="display:none">
+        <p>✨ 연금술 촉진! 버릴 카드를 선택하세요.</p>
       </div>
     </div>
   </div>
 
-  <!-- 결과 -->
-  <div id="result-screen" class="screen">
-    <div class="result-box">
+</div>
+
+<!-- ════════════════════════════════════
+     결과 화면
+════════════════════════════════════ -->
+<div id="result-screen" class="screen">
+  <div class="lobby-wrap">
+    <div class="lobby-box">
+      <div class="lobby-ornament top">⸻ ✦ ⸻</div>
       <h2 id="result-title">실험 완료!</h2>
       <p id="result-winner"></p>
-      <button id="btn-restart">다시 도전</button>
+      <div id="result-details"></div>
+      <button id="btn-restart" class="btn-primary">다시 도전</button>
+      <div class="lobby-ornament bottom">⸻ ✦ ⸻</div>
     </div>
   </div>
+</div>
 
-  <!-- 플레이어 타겟 선택 모달 -->
-  <div id="target-select-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index:200;">
-    <div class="cell-desc-inner">
-      <div class="cell-desc-title" id="target-select-title"></div>
-      <div id="target-select-list" style="display:flex; flex-direction:column; gap:.6rem; margin:1rem 0;"></div>
-    </div>
+<!-- ════════════════════════════════════
+     모달들
+════════════════════════════════════ -->
+
+<!-- 칸 설명 팝업 -->
+<div id="cell-desc-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon" id="cell-desc-icon"></div>
+    <div class="modal-title" id="cell-desc-title"></div>
+    <div class="modal-text" id="cell-desc-text"></div>
+    <button id="cell-desc-close" class="btn-primary">닫기</button>
   </div>
+</div>
 
-  <!-- 재료 경고 팝업 -->
-  <div id="ingredient-warning-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:200;">
-    <div class="warning-inner">
-      <div style="font-size:2.5rem; margin-bottom:.5rem;">⚠️</div>
-      <div id="ingredient-warning-text" style="color:#FFE4B5; font-size:1rem; line-height:1.5; margin-bottom:1rem;"></div>
-      <button id="ingredient-warning-close">확인</button>
-    </div>
+<!-- 플레이어 타겟 선택 -->
+<div id="target-select-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title" id="target-select-title"></div>
+    <div id="target-select-list"></div>
+    <button id="target-select-cancel" class="btn-secondary" style="margin-top:.8rem; width:100%">취소</button>
   </div>
+</div>
 
-  <!-- 칸 설명 팝업 -->
-  <div id="cell-desc-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index:200;">
-    <div class="cell-desc-inner">
-      <div class="cell-desc-icon" id="cell-desc-icon"></div>
-      <div class="cell-desc-title" id="cell-desc-title"></div>
-      <div class="cell-desc-text" id="cell-desc-text"></div>
-      <button id="cell-desc-close">닫기</button>
-    </div>
+<!-- 재료 경고 -->
+<div id="ingredient-warning-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box warning-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">재료 부족!</div>
+    <div class="modal-text" id="ingredient-warning-text"></div>
+    <button id="ingredient-warning-close" class="btn-primary">확인</button>
   </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="js/board.js"></script>
-  <script src="js/hand.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/main.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/board.js"></script>
+<script src="js/hand.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
