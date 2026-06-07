@@ -185,6 +185,47 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 가마솥
+  socket.on("cauldron-discard", ({ cardIndices }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.cauldronDiscard(socket.id, cardIndices);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    broadcastGameUpdate(io, room);
+    if (result.winner) {
+      io.to(room.id).emit("game-over", { winnerId:result.winner.id, winnerName:result.winner.name });
+      delete rooms[room.id];
+    } else triggerBotTurn(room);
+  });
+
+  // 불순물 정제
+  socket.on("impurity-discard", ({ cardIndices }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.impurityDiscard(socket.id, cardIndices);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    broadcastGameUpdate(io, room);
+    room.players.forEach(p => { if (!p.isBot) io.to(p.id).emit("hand-updated", { hand:p.hand }); });
+    if (result.winner) {
+      io.to(room.id).emit("game-over", { winnerId:result.winner.id, winnerName:result.winner.name });
+      delete rooms[room.id];
+    } else triggerBotTurn(room);
+  });
+
+  // 시공간 도약
+  socket.on("spacetime-leap", ({ cardIndex, targetCell }) => {
+    const room = rooms[socket.data.roomId];
+    if (!room) return;
+    const result = room.spacetimeLeap(socket.id, cardIndex, targetCell);
+    if (!result.success) return socket.emit("error", { message:result.message });
+    broadcastGameUpdate(io, room);
+    if (result.events?.length) io.to(room.id).emit("cell-events", { events:result.events });
+    if (result.winner) {
+      io.to(room.id).emit("game-over", { winnerId:result.winner.id, winnerName:result.winner.name });
+      delete rooms[room.id];
+    } else triggerBotTurn(room);
+  });
+
   socket.on("disconnect", () => {
     const room = rooms[socket.data.roomId];
     if (!room) return;
