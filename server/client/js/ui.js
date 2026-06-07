@@ -22,6 +22,7 @@ function updatePlayerInfoList(players, currentTurnId, myId) {
   const list = document.getElementById("player-info-list");
   if (!list) return;
   list.innerHTML = "";
+  
   players.forEach(p => {
     const isActive = p.id === currentTurnId;
     const isMe = p.id === myId;
@@ -40,6 +41,13 @@ function updatePlayerInfoList(players, currentTurnId, myId) {
     `;
     list.appendChild(row);
   });
+
+  // 👇👇 여기서부터 새로 추가하는 규칙 텍스트 코드입니다 👇👇
+  const gameRule = document.createElement("div");
+  gameRule.style.cssText = "font-size: 0.75rem; color: #aaa; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #555; line-height: 1.5; font-family: 'Cinzel', sans-serif;";
+  gameRule.innerHTML = "📜 <b>실험 목표</b><br>1. 재료 4종(🔥💧🌿🌪️) 수집<br>2. 손패 모두 소진";
+  list.appendChild(gameRule);
+  // 👆👆 여기까지 👆👆
 }
 
 function updateTurnBanner(players, currentTurnId, myId) {
