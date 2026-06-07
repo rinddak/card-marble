@@ -269,6 +269,16 @@ function renderGameState() {
   if (!gameState) return;
   drawBoard(null, gameState.board, gameState.players);
   updatePlayerInfoList(gameState.players, gameState.currentTurn, myId);
+  // ▼ 규칙 추가: 리스트 아래에 규칙을 삽입하는 코드입니다 ▼
+  const list = document.getElementById("player-list");
+  if (list && !document.getElementById("game-rule-text")) {
+      const ruleDiv = document.createElement("div");
+      ruleDiv.id = "game-rule-text";
+      ruleDiv.style.cssText = "font-size: 0.8rem; color: #aaa; margin-top: 15px; padding: 10px; border-top: 1px solid #444; line-height: 1.4;";
+      ruleDiv.innerHTML = "📜 <b>실험 목표:</b><br>재료 4종(🔥💧🌿🌪️)을 모두 모으고,<br>손패의 카드를 모두 소진하세요!";
+      list.appendChild(ruleDiv);
+  }
+  // ▲ 규칙 추가 끝 ▲
   updateTurnBanner(gameState.players, gameState.currentTurn, myId);
 
   const isMyTurn = gameState.currentTurn === myId;
@@ -329,17 +339,32 @@ function showMultiSelectBanner(type, msg, maxCount) {
   banner.style.display = "block";
 
   const confirmBtn = document.getElementById("btn-multi-confirm");
-  const selected = type === "cauldron" ? cauldronSelected : impuritySelected;
+  
+  // 기존 onclick 이벤트를 초기화하기 위해 화살표 함수 대신 
+  // 새 함수를 할당하거나 리스너를 교체하는 방식이 안전합니다.
   confirmBtn.onclick = () => {
-    banner.style.display = "none";
-    if (type === "cauldron") {
-      socket.emit("cauldron-discard", { cardIndices: cauldronSelected });
-      cauldronMode = false; cauldronSelected = [];
-    } else {
-      socket.emit("impurity-discard", { cardIndices: impuritySelected });
-      impurityMode = false; impuritySelected = [];
+    // 1. 현재 모드에 따라 선택된 데이터 참조
+    const selected = (type === "cauldron") ? cauldronSelected : impuritySelected;
+    
+    // 2. 예외 처리: 카드가 선택되지 않았을 때
+    if (selected.length === 0) {
+      alert("카드를 최소 1장 이상 선택해주세요!");
+      return;
     }
-    // 선택 해제
+
+    // 3. 서버로 전송
+    if (type === "cauldron") {
+      socket.emit("cauldron-discard", { cardIndices: selected });
+      cauldronMode = false;
+      cauldronSelected = []; // 초기화
+    } else {
+      socket.emit("impurity-discard", { cardIndices: selected });
+      impurityMode = false;
+      impuritySelected = []; // 초기화
+    }
+
+    // 4. UI 닫기 및 초기화
+    banner.style.display = "none";
     document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
   };
 }
