@@ -290,20 +290,24 @@ function renderGameState() {
   // ▲ 규칙 추가 끝 ▲
   updateTurnBanner(gameState.players, gameState.currentTurn, myId);
 
-  const drawBtn = document.getElementById("btn-draw");
+  // 1. 기존 카드 뽑기 버튼 제어 (기존 코드)
   const isMyTurn = gameState.currentTurn === myId;
-  if (drawBtn) {
-    drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode || cauldronMode || impurityMode;
-  }
+  const drawBtn = document.getElementById("btn-draw");
+  if (drawBtn) drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode || cauldronMode || impurityMode;
 
-  // 2. 카드 내기 버튼 제어 (여기가 핵심!)
+  // 2. [수정] 카드 내기 버튼 강제 제어 (이 부분을 추가/수정하세요)
   const playBtn = document.getElementById("btn-play-card");
   if (playBtn) {
-    // [내 턴] 이거나 [가마솥/불순물 모드] 중이면 버튼을 활성화(false)합니다.
-    const isSpecialMode = cauldronMode || impurityMode || alchBoostMode || potionMode || spacetimeMode;
-    playBtn.disabled = !(isMyTurn || isSpecialMode);
+      // 가마솥, 불순물, 알케미, 포션, 시공간 도약 중 하나라도 켜져 있으면 SpecialMode
+      const isSpecialMode = cauldronMode || impurityMode || alchBoostMode || potionMode || spacetimeMode;
+      
+      // 내 턴이거나 특수 모드일 때는 무조건 활성화 (disabled = false)
+      playBtn.disabled = !(isMyTurn || isSpecialMode);
+      
+      // 혹시 CSS로 막혔을지 모르니 강제로 클릭 가능하게 스타일 수정
+      playBtn.style.cursor = playBtn.disabled ? "not-allowed" : "pointer";
+      playBtn.style.opacity = playBtn.disabled ? "0.5" : "1";
   }
-
   const me = gameState.players.find(p => p.id === myId);
   if (me) {
     renderIngredients(me.ingredients || []);
