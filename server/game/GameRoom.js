@@ -56,13 +56,23 @@ class GameRoom {
   // 마법 상자 초기 배치
   _placeMagicBox() {
     if (this.magicBoxCell !== null) {
-      this.board[this.magicBoxCell].hasMagicBox = false;
-      this.board[this.magicBoxCell].type = this.board[this.magicBoxCell]._origType || "normal";
+      const oldCell = this.board[this.magicBoxCell];
+      oldCell.hasMagicBox = false;
+      oldCell.type = oldCell._origType || "normal";
+      oldCell.baseType = oldCell.type;
+      oldCell.label = oldCell._origLabel !== undefined ? oldCell._origLabel : "";
+      oldCell.icon = oldCell._origIcon !== undefined ? oldCell._origIcon : "";
     }
     const eligible = getBoxEligibleCells(this.board);
     if (eligible.length === 0) return;
     const cell = eligible[Math.floor(Math.random() * eligible.length)];
+    
+    // 원래 칸 정보 완벽하게 백업
     cell._origType = cell.type;
+    cell._origLabel = cell.label;
+    cell._origIcon = cell.icon;
+    
+    // 상자 속성 덮어씌우기
     cell.hasMagicBox = true;
     cell.type = "magic_box";
     cell.baseType = "magic_box";
@@ -143,18 +153,40 @@ class GameRoom {
     player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
     const cell = this.board[player.pos];
 
+    let magicBoxEvent = null;
+
     // 마법 상자 획득 처리
     if (cell.hasMagicBox || cell.type === "magic_box") {
+      // 1. 전설 카드 보상 지급 풀
+      const legendaryCards = [
+        { id: "mana_explosion", name: "광역 폭발", icon: "💥", desc: "모든 상대방 카드 2장 드로우", rarity: "legendary" },
+        { id: "impurity_refine", name: "불순물 정제", icon: "⚗️", desc: "최대 2장 버리고 1장 드로우", rarity: "legendary" },
+        { id: "spacetime_leap", name: "시공간 도약", icon: "🌌", desc: "원하는 칸으로 즉시 이동", rarity: "legendary" }
+      ];
+      // 랜덤으로 1장 뽑아서 플레이어에게 지급
+      const reward = legendaryCards[Math.floor(Math.random() * legendaryCards.length)];
+      player.chanceCards.push(reward);
+
+      // 2. 상자가 있던 칸을 원래대로 완벽 복구
       cell.hasMagicBox = false;
       cell.type = cell._origType || "normal";
       cell.baseType = cell.type;
-      cell.label = cell.type === "normal" ? "" : cell.label;
-      cell.icon = cell.type === "normal" ? "" : cell.icon;
+      cell.label = cell._origLabel !== undefined ? cell._origLabel : "";
+      cell.icon = cell._origIcon !== undefined ? cell._origIcon : "";
+      
       this.magicBoxCell = null;
       this.magicBoxTurnCounter = 0;
+
+      // 3. 로그 메시지 이벤트 생성
+      magicBoxEvent = { type: "magic_box", message: `🎁 마법 상자 발견! 전설 카드 [${reward.name}] 획득!` };
     }
 
     const events = applyCellEffect(cell, player, this.players, this.deck);
+
+    // 상자 이벤트가 있었다면 이벤트 목록 맨 앞에 추가하여 클라이언트로 전송
+    if (magicBoxEvent) {
+      events.unshift(magicBoxEvent);
+    }
 
     // 연금술 타겟 선택
     if (events.find(e => e.type === "alchemy_select")) {
