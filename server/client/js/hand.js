@@ -1,15 +1,19 @@
-function renderHand(hand, isMyTurn, potionMode, onCardSelect) {
+const SUIT_SYMBOLS = { spade:"♠", heart:"♥", diamond:"♦", club:"♣" };
+const SUIT_COLORS  = { spade:"black", heart:"red", diamond:"red", club:"black" };
+
+function renderHand(hand, isActive, isSpecialMode, onCardSelect) {
   const container = document.getElementById("hand-cards");
-  const actionBtns = document.getElementById("action-buttons");
+  const countLabel = document.getElementById("hand-count-label");
+  const actionStatus = document.getElementById("action-status");
+  const playBtn = document.getElementById("btn-play-card");
   container.innerHTML = "";
 
-  // Play 버튼이 없으면 추가
-  let playBtn = document.getElementById("btn-play-card");
-  if (!playBtn) {
-    playBtn = document.createElement("button");
-    playBtn.id = "btn-play-card";
-    playBtn.textContent = "카드 내기";
-    actionBtns.prepend(playBtn);
+  if (countLabel) countLabel.textContent = `(${hand.length}장)`;
+
+  if (actionStatus) {
+    if (isSpecialMode) actionStatus.textContent = "버릴 카드를 선택하세요";
+    else if (isActive) actionStatus.textContent = "카드를 선택하세요";
+    else actionStatus.textContent = "상대방의 턴입니다...";
   }
 
   let selectedIndex = -1;
@@ -17,33 +21,57 @@ function renderHand(hand, isMyTurn, potionMode, onCardSelect) {
   hand.forEach((card, i) => {
     const el = document.createElement("div");
     const isRed = card.suit === "heart" || card.suit === "diamond";
-    el.className = "card" + (isRed ? " red" : "") + (isMyTurn ? "" : " disabled");
+    const sym = SUIT_SYMBOLS[card.suit] || card.suit;
 
-    const suitSymbols = { spade:"♠", heart:"♥", diamond:"♦", club:"♣" };
+    el.className = "card" + (isRed ? " red" : "") +
+      (!isActive ? " disabled" : "") +
+      (isSpecialMode ? " highlight-mode" : "");
 
     el.innerHTML = `
-      <div class="card-rank">${card.rank}</div>
-      <div class="card-suit">${suitSymbols[card.suit] || card.suit}</div>
+      <div class="card-top">
+        <div class="card-rank">${card.rank}</div>
+        <div class="card-suit">${sym}</div>
+      </div>
+      <div class="card-center">${sym}</div>
+      <div class="card-bottom">
+        <div class="card-rank">${card.rank}</div>
+        <div class="card-suit">${sym}</div>
+      </div>
       <div class="card-move">${card.move}칸</div>
     `;
 
-    if (isMyTurn) {
+    if (isActive) {
       el.addEventListener("click", () => {
         container.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
         el.classList.add("selected");
         selectedIndex = i;
+        if (playBtn) playBtn.disabled = false;
       });
     }
     container.appendChild(el);
   });
 
-  playBtn.disabled = !isMyTurn;
-  playBtn.onclick = () => {
-    if (selectedIndex < 0) return alert("카드를 선택해주세요.");
-    onCardSelect(selectedIndex, potionMode);
-    selectedIndex = -1;
-    container.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
-  };
+  if (playBtn) {
+    playBtn.disabled = !isActive || selectedIndex < 0;
+    // 기존 이벤트 제거 후 재등록
+    const newBtn = playBtn.cloneNode(true);
+    playBtn.parentNode.replaceChild(newBtn, playBtn);
+    newBtn.disabled = true;
+
+    // 카드 클릭 이벤트에서 버튼 활성화
+    container.querySelectorAll(".card").forEach((el, i) => {
+      if (isActive) {
+        el.addEventListener("click", () => {
+          newBtn.disabled = false;
+          newBtn.onclick = () => {
+            onCardSelect(i, isSpecialMode);
+            container.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
+            newBtn.disabled = true;
+          };
+        });
+      }
+    });
+  }
 }
 
 window.renderHand = renderHand;
