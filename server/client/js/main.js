@@ -477,39 +477,53 @@ document.getElementById("hand-cards").addEventListener("click", (e) => {
 
 // 2. [카드 내기] 버튼 가로채기
 // 기존의 btn-play-card 관련 모든 addEventListener를 지우고 아래 코드를 넣어주세요
-document.getElementById("btn-play-card").addEventListener("click", () => {
-  // 1. 가마솥 / 불순물 모드일 때
-  if (cauldronMode || impurityMode) {
-    if (multiSelectedIndices.length === 0) {
-      return alert("버릴 카드를 1장 이상 선택해주세요!");
-    }
 
-    const eventName = cauldronMode ? "cauldron-discard" : "impurity-discard";
-    socket.emit(eventName, { cardIndices: multiSelectedIndices });
+// 버튼 객체를 먼저 가져옵니다
+const playBtn = document.getElementById("btn-play-card");
+
+// 버튼의 기존 이벤트들을 초기화하기 위해 노드를 복제해서 교체합니다 (가장 확실한 방법)
+const newPlayBtn = playBtn.cloneNode(true);
+playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+
+// 이제 이 버튼 하나만 이벤트를 처리합니다
+newPlayBtn.addEventListener("click", () => {
+  // 0. 버튼이 비활성화 되어있다면 강제로 켭니다
+  newPlayBtn.disabled = false;
+
+  // 1. 가마솥/불순물 모드일 때 (다중 선택 전송)
+  if (cauldronMode || impurityMode) {
+    const targetArray = cauldronMode ? cauldronSelected : impuritySelected;
+    
+    if (targetArray.length === 0) return alert("버릴 카드를 선택해주세요!");
+
+    socket.emit(cauldronMode ? "cauldron-discard" : "impurity-discard", { 
+        cardIndices: targetArray 
+    });
 
     // UI 초기화
     cauldronMode = false;
     impurityMode = false;
-    multiSelectedIndices = [];
+    cauldronSelected = []; 
+    impuritySelected = [];
     document.getElementById("action-status").style.display = "none";
-    document.getElementById("btn-play-card").innerHTML = `<span class="btn-icon">⚗️</span> 카드 내기`;
+    newPlayBtn.innerHTML = `<span class="btn-icon">⚗️</span> 카드 내기`;
     document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
-    return; // 여기서 종료
+    return; 
   }
 
-  // 2. 일반 카드 내기 모드 (기존 hand.js 시스템 사용)
-  // hand.js에서 선택된 카드 정보를 가져와야 합니다.
+  // 2. 일반 모드일 때
+  // hand.js 시스템과 연동: 선택된 카드를 찾음
   const selectedCard = document.querySelector("#hand-cards .card.selected");
   if (!selectedCard) {
     return alert("먼저 카드를 클릭해서 선택해주세요!");
   }
   
-  // 선택된 카드의 인덱스를 찾아야 함
+  // 선택된 카드의 인덱스 추출
   const allCards = Array.from(document.querySelectorAll("#hand-cards .card"));
   const cardIndex = allCards.indexOf(selectedCard);
   
   if (cardIndex >= 0) {
     handleCardPlay(cardIndex, false);
-    selectedCard.classList.remove("selected"); // 선택 해제
+    selectedCard.classList.remove("selected");
   }
 });
