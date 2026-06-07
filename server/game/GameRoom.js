@@ -1,5 +1,5 @@
 const { createShuffledDeck } = require("./Deck");
-const { createBoard, applyCellEffect } = require("./Board");
+const { createBoard, applyCellEffect, getBoxEligibleCells } = require("./Board");
 
 const HAND_SIZE = 10;
 const TOTAL_CELLS = 24;
@@ -17,6 +17,11 @@ class GameRoom {
     this.alchBoostPlayer = null;
     this.alchemySelectPlayer = null;
     this.timeReversePlayer = null;
+    this.cauldronPlayer = null;       // 가마솥 대기
+    this.spacetimeLeapPlayer = null;  // 시공간 도약 대기
+    this.impurityPlayer = null;       // 불순물 정제 대기
+    this.magicBoxTurnCounter = 0;     // 상자 재등장 카운터
+    this.magicBoxCell = null;         // 현재 상자 위치
   }
 
   addPlayer(id, name) {
@@ -48,6 +53,25 @@ class GameRoom {
     if (this.currentTurn >= this.players.length) this.currentTurn = 0;
   }
 
+  // 마법 상자 초기 배치
+  _placeMagicBox() {
+    if (this.magicBoxCell !== null) {
+      this.board[this.magicBoxCell].hasMagicBox = false;
+      this.board[this.magicBoxCell].type = this.board[this.magicBoxCell]._origType || "normal";
+    }
+    const eligible = getBoxEligibleCells(this.board);
+    if (eligible.length === 0) return;
+    const cell = eligible[Math.floor(Math.random() * eligible.length)];
+    cell._origType = cell.type;
+    cell.hasMagicBox = true;
+    cell.type = "magic_box";
+    cell.baseType = "magic_box";
+    cell.label = "마법 상자";
+    cell.icon = "✨";
+    this.magicBoxCell = cell.index;
+    this.magicBoxTurnCounter = 0;
+  }
+
   startGame() {
     this.deck = createShuffledDeck();
     this.players.forEach(p => {
@@ -61,11 +85,10 @@ class GameRoom {
     });
     this.started = true;
     this.currentTurn = 0;
+    this._placeMagicBox();
   }
 
-  getCurrentPlayer() {
-    return this.players[this.currentTurn];
-  }
+  getCurrentPlayer() { return this.players[this.currentTurn]; }
 
   _nextTurn() {
     this.currentTurn = (this.currentTurn + 1) % this.players.length;
@@ -73,6 +96,17 @@ class GameRoom {
     this.alchBoostPlayer = null;
     this.alchemySelectPlayer = null;
     this.timeReversePlayer = null;
+    this.cauldronPlayer = null;
+    this.spacetimeLeapPlayer = null;
+    this.impurityPlayer = null;
+
+    // 마법 상자 재등장 카운터
+    if (this.magicBoxCell === null) {
+      this.magicBoxTurnCounter++;
+      if (this.magicBoxTurnCounter >= 2) {
+        this._placeMagicBox();
+      }
+    }
   }
 
   _checkWin(player) {
@@ -95,14 +129,10 @@ class GameRoom {
     if (cardIndex < 0 || cardIndex >= player.hand.length)
       return { success:false, message:"잘못된 카드 인덱스입니다." };
 
-    // 마지막 카드 버릴 때 재료 체크
     if (player.hand.length === 1) {
       const missing = this._missingIngredients(player);
-      if (missing) {
-        return { success:false,
-          message:`⚠️ 재료가 부족합니다! 필요한 재료: ${missing}`,
-          ingredientWarning:true };
-      }
+      if (missing) return { success:false,
+        message:`⚠️ 재료 부족! 필요: ${missing}`, ingredientWarning:true };
     }
 
     const card = player.hand.splice(cardIndex, 1)[0];
@@ -112,15 +142,33 @@ class GameRoom {
 
     player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
     const cell = this.board[player.pos];
+
+    // 마법 상자 획득 처리
+    if (cell.hasMagicBox || cell.type === "magic_box") {
+      cell.hasMagicBox = false;
+      cell.type = cell._origType || "normal";
+      cell.baseType = cell.type;
+      cell.label = cell.type === "normal" ? "" : cell.label;
+      cell.icon = cell.type === "normal" ? "" : cell.icon;
+      this.magicBoxCell = null;
+      this.magicBoxTurnCounter = 0;
+    }
+
     const events = applyCellEffect(cell, player, this.players, this.deck);
 
-    // 연금술 타겟 선택 대기
+    // 연금술 타겟 선택
     if (events.find(e => e.type === "alchemy_select")) {
       this.alchemySelectPlayer = player.id;
       return { success:true, events, alchemySelect:true, winner:null };
     }
 
-    // 수정구슬 카드 버리기 선택
+    // 가마솥
+    if (events.find(e => e.type === "cauldron")) {
+      this.cauldronPlayer = player.id;
+      return { success:true, events, cauldron:true, winner:null };
+    }
+
+    // 수정구슬
     if (events.find(e => e.type === "potion")) {
       this.potionChancePlayer = player.id;
       if (this._checkWin(player)) return { success:true, events, winner:player };
@@ -129,19 +177,38 @@ class GameRoom {
 
     if (this._checkWin(player)) return { success:true, events, winner:player };
     this._nextTurn();
-    return { success:true, events, potionChance:false, winner:null };
+    return { success:true, events, winner:null };
+  }
+
+  // 가마솥: 카드 버리고 1장 드로우
+  cauldronDiscard(playerId, cardIndices) {
+    if (this.cauldronPlayer !== playerId)
+      return { success:false, message:"가마솥 효과가 없습니다." };
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { success:false, message:"플레이어 없음" };
+
+    const validIndices = [...new Set(cardIndices)]
+      .filter(i => i >= 0 && i < player.hand.length)
+      .slice(0, 2)
+      .sort((a,b) => b - a); // 뒤에서부터 제거
+
+    validIndices.forEach(i => player.hand.splice(i, 1));
+    if (this.deck.length > 0) player.hand.push(this.deck.pop());
+
+    this._nextTurn();
+    if (this._checkWin(player)) return { success:true, winner:player };
+    return { success:true, winner:null };
   }
 
   alchemyTarget(playerId, targetId) {
     if (this.alchemySelectPlayer !== playerId)
-      return { success:false, message:"연금술 선택 권한이 없습니다." };
+      return { success:false, message:"연금술 권한 없음." };
     const target = this.players.find(p => p.id === targetId);
-    if (!target) return { success:false, message:"대상 플레이어 없음" };
-
+    if (!target) return { success:false, message:"대상 없음" };
     if (target.protected) {
       target.protected = false;
       this._nextTurn();
-      return { success:true, message:`🛡️ ${target.name}의 마법 방패 발동! 연금술 무효화!` };
+      return { success:true, message:`🛡️ ${target.name}의 방패! 연금술 무효!` };
     }
     const drawn = [];
     for (let i = 0; i < 2 && this.deck.length > 0; i++) drawn.push(this.deck.pop());
@@ -154,8 +221,7 @@ class GameRoom {
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success:false, message:"플레이어 없음" };
     const idx = player.chanceCards.findIndex(c => c.id === cardId);
-    if (idx < 0) return { success:false, message:"보유하지 않은 찬스 카드" };
-
+    if (idx < 0) return { success:false, message:"보유하지 않은 카드" };
     player.chanceCards.splice(idx, 1);
 
     switch (cardId) {
@@ -163,37 +229,90 @@ class GameRoom {
         player.pos = (player.pos + 3) % TOTAL_CELLS;
         const cell = this.board[player.pos];
         const events = applyCellEffect(cell, player, this.players, this.deck);
-        if (this._checkWin(player))
-          return { success:true, message:"⚡ 번개 가속! 3칸 추가 이동!", winner:player, events };
+        if (this._checkWin(player)) return { success:true, message:"⚡ 3칸 이동!", winner:player, events };
         return { success:true, message:"⚡ 번개 가속! 3칸 추가 이동!", events };
       }
       case "magic_shield":
         player.protected = true;
-        return { success:true, message:"🛡️ 마법 방패! 다음 공격을 막습니다.", events:[] };
+        return { success:true, message:"🛡️ 마법 방패 장착!", events:[] };
       case "time_reverse":
         this.timeReversePlayer = playerId;
         return { success:true, message:"🔄 시간 역행! 대상을 선택하세요.", timeReverse:true, events:[] };
       case "alch_boost":
         this.alchBoostPlayer = playerId;
         return { success:true, message:"✨ 연금술 촉진! 버릴 카드를 선택하세요.", alchBoost:true, events:[] };
+      // 전설 카드
+      case "mana_explosion": {
+        const others = this.players.filter(p => p.id !== playerId);
+        others.forEach(p => {
+          for (let i = 0; i < 2 && this.deck.length > 0; i++) p.hand.push(this.deck.pop());
+        });
+        return { success:true, message:`💥 광역 폭발! 모든 상대방이 카드 2장 드로우!`, events:[] };
+      }
+      case "impurity_refine":
+        this.impurityPlayer = playerId;
+        return { success:true, message:"⚗️ 불순물 정제! 버릴 카드를 최대 2장 선택하세요.", impurity:true, events:[] };
+      case "spacetime_leap":
+        this.spacetimeLeapPlayer = playerId;
+        return { success:true, message:"🌌 시공간 도약! 카드 1장을 내고 이동할 칸을 선택하세요.", spacetimeLeap:true, events:[] };
     }
     return { success:false, message:"알 수 없는 카드" };
   }
 
   timeReverseTarget(playerId, targetId) {
     if (this.timeReversePlayer !== playerId)
-      return { success:false, message:"시간 역행 권한이 없습니다." };
+      return { success:false, message:"시간 역행 권한 없음" };
     const target = this.players.find(p => p.id === targetId);
     if (!target) return { success:false, message:"대상 없음" };
-
     if (target.protected) {
       target.protected = false;
       this.timeReversePlayer = null;
-      return { success:true, message:`🛡️ ${target.name}의 마법 방패 발동! 시간 역행 무효화!` };
+      return { success:true, message:`🛡️ ${target.name}의 방패! 시간 역행 무효!` };
     }
     target.pos = ((target.pos - 2) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
     this.timeReversePlayer = null;
     return { success:true, message:`🔄 ${target.name}을(를) 2칸 뒤로!` };
+  }
+
+  // 불순물 정제: 최대 2장 버리고 1장 드로우
+  impurityDiscard(playerId, cardIndices) {
+    if (this.impurityPlayer !== playerId)
+      return { success:false, message:"불순물 정제 대기 중이 아닙니다." };
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { success:false, message:"플레이어 없음" };
+
+    const validIndices = [...new Set(cardIndices)]
+      .filter(i => i >= 0 && i < player.hand.length)
+      .slice(0, 2)
+      .sort((a,b) => b - a);
+    validIndices.forEach(i => player.hand.splice(i, 1));
+    if (this.deck.length > 0) player.hand.push(this.deck.pop());
+    this.impurityPlayer = null;
+    if (this._checkWin(player)) return { success:true, winner:player };
+    return { success:true, winner:null };
+  }
+
+  // 시공간 도약: 카드 내고 원하는 칸으로 이동
+  spacetimeLeap(playerId, cardIndex, targetCell) {
+    if (this.spacetimeLeapPlayer !== playerId)
+      return { success:false, message:"시공간 도약 대기 중이 아닙니다." };
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { success:false, message:"플레이어 없음" };
+    if (cardIndex < 0 || cardIndex >= player.hand.length)
+      return { success:false, message:"잘못된 카드 인덱스" };
+    if (targetCell < 0 || targetCell >= TOTAL_CELLS)
+      return { success:false, message:"잘못된 칸 번호" };
+
+    player.hand.splice(cardIndex, 1);
+    player.pos = targetCell;
+    this.spacetimeLeapPlayer = null;
+
+    const cell = this.board[player.pos];
+    const events = applyCellEffect(cell, player, this.players, this.deck);
+    if (this._checkWin(player)) return { success:true, events, winner:player };
+    this._nextTurn();
+    return { success:true, events, winner:null,
+      message:`🌌 시공간 도약! ${targetCell}번 칸으로 이동!` };
   }
 
   alchBoostDiscard(playerId, cardIndex) {
@@ -203,14 +322,11 @@ class GameRoom {
     if (!player) return { success:false, message:"플레이어 없음" };
     if (cardIndex < 0 || cardIndex >= player.hand.length)
       return { success:false, message:"잘못된 카드 인덱스" };
-
     if (player.hand.length === 1) {
       const missing = this._missingIngredients(player);
       if (missing) return { success:false,
-        message:`⚠️ 재료가 부족합니다! 필요한 재료: ${missing}`,
-        ingredientWarning:true };
+        message:`⚠️ 재료 부족! 필요: ${missing}`, ingredientWarning:true };
     }
-
     player.hand.splice(cardIndex, 1);
     this.alchBoostPlayer = null;
     if (this._checkWin(player)) return { success:true, winner:player };
@@ -219,19 +335,16 @@ class GameRoom {
 
   potionDiscard(playerId, cardIndex) {
     if (this.potionChancePlayer !== playerId)
-      return { success:false, message:"수정구슬 찬스가 없습니다." };
+      return { success:false, message:"수정구슬 찬스 없음" };
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success:false, message:"플레이어 없음" };
     if (cardIndex < 0 || cardIndex >= player.hand.length)
       return { success:false, message:"잘못된 카드 인덱스" };
-
     if (player.hand.length === 1) {
       const missing = this._missingIngredients(player);
       if (missing) return { success:false,
-        message:`⚠️ 재료가 부족합니다! 필요한 재료: ${missing}`,
-        ingredientWarning:true };
+        message:`⚠️ 재료 부족! 필요: ${missing}`, ingredientWarning:true };
     }
-
     player.hand.splice(cardIndex, 1);
     this._nextTurn();
     if (this._checkWin(player)) return { success:true, winner:player };
@@ -247,7 +360,7 @@ class GameRoom {
     if (!player || player.id !== playerId)
       return { success:false, message:"당신의 턴이 아닙니다." };
     if (this.deck.length === 0)
-      return { success:false, message:"덱이 비어 있습니다." };
+      return { success:false, message:"덱이 비었습니다." };
     player.hand.push(this.deck.pop());
     this._nextTurn();
     return { success:true };
@@ -257,52 +370,54 @@ class GameRoom {
     const bot = this.getCurrentPlayer();
     if (!bot || !bot.isBot) return null;
 
-    // 찬스 카드 30% 확률 사용
     if (bot.chanceCards.length > 0 && Math.random() < 0.3) {
       const card = bot.chanceCards[Math.floor(Math.random() * bot.chanceCards.length)];
       const result = this.useChanceCard(bot.id, card.id);
       if (result.timeReverse) {
         const others = this.players.filter(p => p.id !== bot.id);
         if (others.length > 0) {
-          const target = others[Math.floor(Math.random() * others.length)];
-          return this.timeReverseTarget(bot.id, target.id);
+          const t = others[Math.floor(Math.random() * others.length)];
+          return this.timeReverseTarget(bot.id, t.id);
         }
       }
-      if (result.alchBoost && bot.hand.length > 0) {
-        const idx = Math.floor(Math.random() * bot.hand.length);
-        return this.alchBoostDiscard(bot.id, idx);
+      if (result.alchBoost && bot.hand.length > 0)
+        return this.alchBoostDiscard(bot.id, Math.floor(Math.random() * bot.hand.length));
+      if (result.impurity && bot.hand.length > 0) {
+        const count = Math.min(2, bot.hand.length);
+        const indices = Array.from({length:count}, (_,i) => i);
+        return this.impurityDiscard(bot.id, indices);
+      }
+      if (result.spacetimeLeap && bot.hand.length > 0) {
+        const cardIdx = Math.floor(Math.random() * bot.hand.length);
+        const targetCell = Math.floor(Math.random() * 24);
+        return this.spacetimeLeap(bot.id, cardIdx, targetCell);
       }
       if (result.events?.length) return result;
     }
 
-    // 카드 내기
     if (bot.hand.length > 0) {
-      // 마지막 카드인데 재료 없으면 드로우
       if (bot.hand.length === 1 && !this._checkWin(bot)) {
         if (this.deck.length > 0) bot.hand.push(this.deck.pop());
         this._nextTurn();
         return { success:true, events:[], winner:null };
       }
-
       const cardIndex = Math.floor(Math.random() * bot.hand.length);
       const result = this.playCard(bot.id, cardIndex);
-
       if (result.alchemySelect) {
         const others = this.players.filter(p => p.id !== bot.id);
         if (others.length > 0) {
-          const target = others[Math.floor(Math.random() * others.length)];
-          return this.alchemyTarget(bot.id, target.id);
+          const t = others[Math.floor(Math.random() * others.length)];
+          return this.alchemyTarget(bot.id, t.id);
         }
         this._nextTurn();
         return { success:true, events:[], winner:null };
       }
-      if (result.potionChance) {
-        if (bot.hand.length > 0) {
-          const idx = Math.floor(Math.random() * bot.hand.length);
-          return this.potionDiscard(bot.id, idx);
-        }
-        this.clearPotionChance(bot.id);
+      if (result.cauldron) {
+        const count = Math.min(2, bot.hand.length);
+        return this.cauldronDiscard(bot.id, Array.from({length:count}, (_,i) => i));
       }
+      if (result.potionChance && bot.hand.length > 0)
+        return this.potionDiscard(bot.id, Math.floor(Math.random() * bot.hand.length));
       return result;
     } else {
       return this.drawCard(bot.id);
@@ -324,8 +439,7 @@ class GameRoom {
         id:p.id, name:p.name, pos:p.pos, color:p.color,
         handCount:p.hand.length, reverseNext:p.reverseNext,
         doubleNext:p.doubleNext, protected:p.protected,
-        chanceCards:p.chanceCards, ingredients:p.ingredients,
-        isBot:p.isBot
+        chanceCards:p.chanceCards, ingredients:p.ingredients, isBot:p.isBot
       })),
       currentTurn: this.players[this.currentTurn]?.id || null,
       deckCount: this.deck.length,
@@ -333,6 +447,10 @@ class GameRoom {
       alchBoostPlayer: this.alchBoostPlayer,
       alchemySelectPlayer: this.alchemySelectPlayer,
       timeReversePlayer: this.timeReversePlayer,
+      cauldronPlayer: this.cauldronPlayer,
+      spacetimeLeapPlayer: this.spacetimeLeapPlayer,
+      impurityPlayer: this.impurityPlayer,
+      magicBoxCell: this.magicBoxCell,
     };
   }
 }
