@@ -176,20 +176,30 @@ class GameRoom {
     if (player.doubleNext) { move *= 2; player.doubleNext = false; }
     if (player.reverseNext) { move = -move; player.reverseNext = false; }
 
+    // GameRoom.js 의 playCard 내 이동 로직 부분
+  playCard(playerId, cardIndex) {
+    // ... 기존 코드 ...
     player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
-    const cell = this.board[player.pos];
-
-    // [수정된 부분] 
-    // 1. 여기서 magicBoxEvent를 먼저 계산합니다.
+    
+    // 웜홀이나 이동 후 도착한 칸에 대해 효과 적용 로직
+    let cell = this.board[player.pos];
+    
+    // 마법 상자 획득
     const magicBoxEvent = this._eatMagicBox(player, cell);
     
-    // 2. 기본 셀 효과를 적용합니다.
-    const events = applyCellEffect(cell, player, this.players, this.deck);
-
-    // 3. 만약 상자 이벤트가 있었다면, 효과 목록 맨 앞에 추가합니다.
-    if (magicBoxEvent) {
-      events.unshift(magicBoxEvent);
+    // 효과 적용
+    let events = applyCellEffect(cell, player, this.players, this.deck);
+    
+    // 만약 웜홀 효과로 인해 pos가 바뀌었다면, 바뀐 위치의 효과를 다시 적용
+    if (events.find(e => e.type === "wormhole")) {
+        cell = this.board[player.pos];
+        const secondaryEvents = applyCellEffect(cell, player, this.players, this.deck);
+        events = [...events, ...secondaryEvents];
     }
+    
+    if (magicBoxEvent) events.unshift(magicBoxEvent);
+    // ... 이후 동일 ...
+  }
 
     // 연금술 타겟 선택
     if (events.find(e => e.type === "alchemy_select")) {
