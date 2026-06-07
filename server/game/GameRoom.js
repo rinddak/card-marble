@@ -179,17 +179,24 @@ class GameRoom {
     player.pos = ((player.pos + move) % TOTAL_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
     const cell = this.board[player.pos];
 
-    let magicBoxEvent = null;
-
-    // [수정 전: 길었던 마법 상자 획득 처리 로직을 지우고 아래 3줄로 교체하세요]
-    
-    // 마법 상자 획득 처리 (새로운 통합 함수 사용)
+    // [수정된 부분] 
+    // 1. 여기서 magicBoxEvent를 먼저 계산합니다.
     const magicBoxEvent = this._eatMagicBox(player, cell);
+    
+    // 2. 기본 셀 효과를 적용합니다.
     const events = applyCellEffect(cell, player, this.players, this.deck);
-    if (magicBoxEvent) events.unshift(magicBoxEvent);
+
+    // 3. 만약 상자 이벤트가 있었다면, 효과 목록 맨 앞에 추가합니다.
+    if (magicBoxEvent) {
+      events.unshift(magicBoxEvent);
+    }
 
     // 연금술 타겟 선택
     if (events.find(e => e.type === "alchemy_select")) {
+      this.alchemySelectPlayer = player.id;
+      return { success:true, events, alchemySelect:true, winner:null };
+    }
+
     // 가마솥
     if (events.find(e => e.type === "cauldron")) {
       this.cauldronPlayer = player.id;
