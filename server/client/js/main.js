@@ -290,9 +290,19 @@ function renderGameState() {
   // ▲ 규칙 추가 끝 ▲
   updateTurnBanner(gameState.players, gameState.currentTurn, myId);
 
-  const isMyTurn = gameState.currentTurn === myId;
   const drawBtn = document.getElementById("btn-draw");
-  if (drawBtn) drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode || cauldronMode;
+  const isMyTurn = gameState.currentTurn === myId;
+  if (drawBtn) {
+    drawBtn.disabled = !isMyTurn || potionMode || alchBoostMode || cauldronMode || impurityMode;
+  }
+
+  // 2. 카드 내기 버튼 제어 (여기가 핵심!)
+  const playBtn = document.getElementById("btn-play-card");
+  if (playBtn) {
+    // [내 턴] 이거나 [가마솥/불순물 모드] 중이면 버튼을 활성화(false)합니다.
+    const isSpecialMode = cauldronMode || impurityMode || alchBoostMode || potionMode || spacetimeMode;
+    playBtn.disabled = !(isMyTurn || isSpecialMode);
+  }
 
   const me = gameState.players.find(p => p.id === myId);
   if (me) {
