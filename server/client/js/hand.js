@@ -8,28 +8,25 @@ function renderHand(hand, isActive, isSpecialMode, onCardSelect) {
 
   if (countLabel) countLabel.textContent = `(${hand.length}장)`;
   if (actionStatus) {
-    if (isSpecialMode) actionStatus.textContent = "⬆ 버릴 카드를 선택하세요";
-    else if (isActive) actionStatus.textContent = "✦ 카드를 선택 후 내기 버튼을 누르세요";
-    else actionStatus.textContent = "⏳ 상대방의 턴입니다...";
+    if (isSpecialMode) actionStatus.textContent = "⬆ 버릴 카드를 클릭하세요";
+    else if (isActive) actionStatus.textContent = "✦ 카드 선택 후 내기 버튼";
+    else actionStatus.textContent = "⏳ 상대방 턴...";
   }
 
-  // 카드 내기 버튼 재생성 (이벤트 중복 방지)
+  // 카드 내기 버튼 초기화 (이벤트 중복 방지)
   const oldBtn = document.getElementById("btn-play-card");
   const newBtn = oldBtn.cloneNode(true);
   oldBtn.parentNode.replaceChild(newBtn, oldBtn);
   newBtn.disabled = true;
 
-  let selectedIndex = -1;
-
   hand.forEach((card, i) => {
     const isRed = card.suit === "heart" || card.suit === "diamond";
-    const colorClass = isRed ? "red" : "black";
     const sym = SUIT_SYMBOLS[card.suit] || card.suit;
-
     const el = document.createElement("div");
-    el.className = "card " + colorClass +
+    el.className = "card " + (isRed ? "red" : "black") +
       (!isActive ? " disabled" : "") +
       (isSpecialMode ? " highlight-mode" : "");
+    el.dataset.move = card.move;
 
     el.innerHTML = `
       <div class="card-corner">
@@ -46,13 +43,11 @@ function renderHand(hand, isActive, isSpecialMode, onCardSelect) {
       el.addEventListener("click", () => {
         container.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
         el.classList.add("selected");
-        selectedIndex = i;
         newBtn.disabled = false;
         newBtn.onclick = () => {
           onCardSelect(i, isSpecialMode);
           container.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
           newBtn.disabled = true;
-          selectedIndex = -1;
         };
       });
     }
