@@ -215,23 +215,26 @@ class GameRoom {
     return { success:true, events, winner:null };
   }
 
-  // 가마솥: 카드 버리고 1장 드로우
+  // GameRoom.js 의 cauldronDiscard 수정
   cauldronDiscard(playerId, cardIndices) {
     if (this.cauldronPlayer !== playerId)
       return { success:false, message:"가마솥 효과가 없습니다." };
     const player = this.players.find(p => p.id === playerId);
-    if (!player) return { success:false, message:"플레이어 없음" };
-
-    const validIndices = [...new Set(cardIndices)]
-      .filter(i => i >= 0 && i < player.hand.length)
-      .slice(0, 2)
-      .sort((a,b) => b - a); // 뒤에서부터 제거
-
-    validIndices.forEach(i => player.hand.splice(i, 1));
+    
+    // 카드 제거 (인덱스 정렬)
+    const sortedIndices = [...new Set(cardIndices)].sort((a, b) => b - a);
+    sortedIndices.forEach(i => player.hand.splice(i, 1));
+    
+    // 1장 드로우
     if (this.deck.length > 0) player.hand.push(this.deck.pop());
 
+    // 승리 조건 체크
+    if (this._checkWin(player)) {
+      this.cauldronPlayer = null;
+      return { success:true, winner:player };
+    }
+    
     this._nextTurn();
-    if (this._checkWin(player)) return { success:true, winner:player };
     return { success:true, winner:null };
   }
 
