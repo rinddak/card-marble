@@ -172,13 +172,13 @@ socket.on("game-updated", (state) => {
   // 가마솥
   if (state.cauldronPlayer === myId) {
     cauldronMode = true;
-    showMultiSelectBanner("cauldron", "🫕 가마솥! 버릴 카드를 최대 2장 선택하세요.", 2);
+    startMultiSelectUI("🫕 가마솥! 버릴 카드를 선택하고 [선택 완료]를 누르세요.");
   } else { cauldronMode = false; }
 
   // 불순물 정제
   if (state.impurityPlayer === myId) {
     impurityMode = true;
-    showMultiSelectBanner("impurity", "⚗️ 불순물 정제! 버릴 카드를 최대 2장 선택하세요.", 2);
+    startMultiSelectUI("⚗️ 불순물 정제! 버릴 카드를 선택하고 [선택 완료]를 누르세요.");
   } else { impurityMode = false; }
 
   // 시공간 도약
@@ -186,7 +186,7 @@ socket.on("game-updated", (state) => {
     spacetimeMode = true;
     showSpacetimeModal();
   }
-}); // 👈👈 최종적으로 여기서 이벤트 리스너를 닫습니다!
+});
 
 socket.on("hand-updated", ({ hand }) => {
   myHand = hand;
@@ -332,43 +332,6 @@ function renderChanceCards(cards) {
   });
 }
 
-function showMultiSelectBanner(type, msg, maxCount) {
-  const banner = document.getElementById("multi-select-banner");
-  if (!banner) return;
-  document.getElementById("multi-select-msg").textContent = msg;
-  banner.style.display = "block";
-
-  const confirmBtn = document.getElementById("btn-multi-confirm");
-  
-  // 기존 onclick 이벤트를 초기화하기 위해 화살표 함수 대신 
-  // 새 함수를 할당하거나 리스너를 교체하는 방식이 안전합니다.
-  confirmBtn.onclick = () => {
-    // 1. 현재 모드에 따라 선택된 데이터 참조
-    const selected = (type === "cauldron") ? cauldronSelected : impuritySelected;
-    
-    // 2. 예외 처리: 카드가 선택되지 않았을 때
-    if (selected.length === 0) {
-      alert("카드를 최소 1장 이상 선택해주세요!");
-      return;
-    }
-
-    // 3. 서버로 전송
-    if (type === "cauldron") {
-      socket.emit("cauldron-discard", { cardIndices: selected });
-      cauldronMode = false;
-      cauldronSelected = []; // 초기화
-    } else {
-      socket.emit("impurity-discard", { cardIndices: selected });
-      impurityMode = false;
-      impuritySelected = []; // 초기화
-    }
-
-    // 4. UI 닫기 및 초기화
-    banner.style.display = "none";
-    document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
-  };
-}
-
 function showSpacetimeModal() {
   // 카드 선택 후 칸 선택 UI
   const modal = document.getElementById("spacetime-modal");
@@ -406,37 +369,18 @@ function renderCellSelector() {
 
 // 가마솥 - 다중 선택 모드
 let cauldronMode = false;
-let cauldronSelected = [];
+
 
 // 불순물 정제 - 다중 선택 모드
 let impurityMode = false;
-let impuritySelected = [];
+
 
 // 시공간 도약 모드
 let spacetimeMode = false;
 let spacetimeCardIndex = -1;
 
+// 2. handleCardPlay 함수 교체 (가마솥/불순물 관련 불필요한 코드 삭제)
 function handleCardPlay(cardIndex, isSpecialMode) {
-  if (cauldronMode) {
-    // 가마솥: 다중 선택
-    const idx = cauldronSelected.indexOf(cardIndex);
-    if (idx >= 0) cauldronSelected.splice(idx, 1);
-    else if (cauldronSelected.length < 2) cauldronSelected.push(cardIndex);
-    // 선택 표시
-    document.querySelectorAll(".card").forEach((el, i) => {
-      el.classList.toggle("selected", cauldronSelected.includes(i));
-    });
-    return;
-  }
-  if (impurityMode) {
-    const idx = impuritySelected.indexOf(cardIndex);
-    if (idx >= 0) impuritySelected.splice(idx, 1);
-    else if (impuritySelected.length < 2) impuritySelected.push(cardIndex);
-    document.querySelectorAll(".card").forEach((el, i) => {
-      el.classList.toggle("selected", impuritySelected.includes(i));
-    });
-    return;
-  }
   if (spacetimeMode) {
     spacetimeCardIndex = cardIndex;
     document.getElementById("spacetime-step").textContent =
@@ -455,3 +399,78 @@ function handleCardPlay(cardIndex, isSpecialMode) {
     socket.emit("play-card", { cardIndex });
   }
 }
+
+// ── 다중 선택 (가마솥, 불순물 정제) 직관적 UI 처리 ──
+let multiSelectedIndices = [];
+
+function startMultiSelectUI(msg) {
+  multiSelectedIndices = [];
+  const statusEl = document.getElementById("action-status");
+  if (statusEl) {
+    statusEl.innerHTML = `<span>${msg}</span>`;
+    statusEl.style.display = "block";
+    statusEl.style.color = "#ffcc00";
+    statusEl.style.marginBottom = "10px";
+  }
+  const playBtn = document.getElementById("btn-play-card");
+  if (playBtn) {
+    playBtn.innerHTML = `<span class="btn-icon">✨</span> 선택 완료`;
+  }
+}
+
+// 1. 손패 클릭 가로채기 (가마솥/불순물 모드일 때만 작동)
+document.getElementById("hand-cards").addEventListener("click", (e) => {
+  if (!cauldronMode && !impurityMode) return;
+  
+  const cardEl = e.target.closest(".card");
+  if (!cardEl) return;
+
+  e.stopPropagation(); // 기존 1장 선택 로직 막기
+
+  const allCards = Array.from(document.querySelectorAll("#hand-cards .card"));
+  const idx = allCards.indexOf(cardEl);
+
+  const selIdx = multiSelectedIndices.indexOf(idx);
+  if (selIdx >= 0) {
+    // 이미 선택된 경우 -> 선택 해제 (원래 위치로 복구)
+    multiSelectedIndices.splice(selIdx, 1);
+    cardEl.style.transform = "translateY(0)";
+    cardEl.style.boxShadow = "none";
+    cardEl.style.border = "none";
+  } else {
+    // 새로 선택하는 경우 (위로 띄우고 형광색 빛 효과)
+    if (multiSelectedIndices.length < 2) {
+      multiSelectedIndices.push(idx);
+      cardEl.style.transform = "translateY(-20px)";
+      cardEl.style.boxShadow = "0 0 15px #00ffcc";
+      cardEl.style.border = "2px solid #00ffcc";
+      cardEl.style.borderRadius = "8px";
+    } else {
+      alert("최대 2장까지만 선택할 수 있습니다.");
+    }
+  }
+}, true); // true = 캡처링 단계에서 우선 가로채기
+
+// 2. [카드 내기] 버튼 가로채기
+document.getElementById("btn-play-card").addEventListener("click", (e) => {
+  if (cauldronMode || impurityMode) {
+    e.stopPropagation(); // 기존 1장 내기 로직 막기
+    
+    if (multiSelectedIndices.length === 0) {
+      return alert("버릴 카드를 1장 이상 선택해주세요!");
+    }
+
+    if (cauldronMode) {
+      socket.emit("cauldron-discard", { cardIndices: multiSelectedIndices });
+    } else {
+      socket.emit("impurity-discard", { cardIndices: multiSelectedIndices });
+    }
+
+    // UI 초기화
+    cauldronMode = false;
+    impurityMode = false;
+    multiSelectedIndices = [];
+    document.getElementById("action-status").style.display = "none";
+    document.getElementById("btn-play-card").innerHTML = `<span class="btn-icon">⚗️</span> 카드 내기`;
+  }
+}, true);
